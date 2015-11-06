@@ -1,0 +1,6 @@
+[submodule "external/CppLog"]
+	path = external/CppLog
+	url = https://github.com/simon-bourne/CppLog
+[submodule "external/CppUtil"]
+	path = external/CppUtil
+	url = https://github.com/simon-bourne/CppUtil
