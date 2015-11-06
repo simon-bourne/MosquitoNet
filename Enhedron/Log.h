@@ -1,9 +1,6 @@
-// Copyright (C) 2014 Enhedron Ltd
-
+// Copyright (C) 2014 Simon Bourne
 
 #pragma once
-
-// This file shouldn't be included in pre compiled headers.
 
 #include "Log/DefaultWriter.h"
 #include "Log/Logger.h"

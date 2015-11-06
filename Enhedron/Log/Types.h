@@ -1,4 +1,4 @@
-// Copyright Enhedron Ltd 2014
+// Copyright Simon Bourne 2014
 
 #pragma once
 
