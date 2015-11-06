@@ -40,6 +40,9 @@ namespace Enhedron { namespace Impl { namespace Util {
 
         explicit Out(ValueType& value) : value(&value) { }
 
+        ValueType& get() { return *value; }
+        const ValueType& get() const { return *value; }
+
         ValueType& operator*() { return *value; }
         const ValueType& operator*() const { return *value; }
 
