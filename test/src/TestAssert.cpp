@@ -88,7 +88,7 @@ namespace Enhedron {
             auto& failure = FailureHandler::failure();
 
             if (check(M_VAR(bool(failure))) && expressionText) {
-                check(M_VAR(failure->expressionText) == string(expressionText));
+                check(M_VAR(failure->expressionText) == expressionText);
             }
         }
         catch (const exception& e){
@@ -163,7 +163,7 @@ namespace Enhedron {
             auto& failure = FailureHandler::failure();
 
             if (check(M_VAR(bool(failure))) && expressionText) {
-                check(M_VAR(failure->expressionText) == string(expressionText));
+                check(M_VAR(failure->expressionText) == expressionText);
             }
         }
         catch (const exception& e) {

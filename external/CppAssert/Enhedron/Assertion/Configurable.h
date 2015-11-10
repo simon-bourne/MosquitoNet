@@ -51,6 +51,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     using std::exception;
     using std::function;
     using std::pair;
+    using std::decay_t;
 
     class Expression {
     };
@@ -78,7 +79,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Value>
     class Literal final : public Expression {
     public:
-        using ResultType = Value;
+        using ResultType = decay_t<const Value>;
 
         explicit Literal(const Value &value) : value(value) { }
 
@@ -99,7 +100,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Functor, typename Arg>
     class UnaryOperator final : public Expression {
     public:
-        using ResultType = typename result_of<Functor(typename Arg::ResultType)>::type;
+        using ResultType = decay_t<const typename result_of<Functor(typename Arg::ResultType)>::type>;
 
         explicit UnaryOperator(const char *operatorName, Functor functor, Arg arg) : operatorName(operatorName),
                                                                                      functor(move(functor)),
@@ -129,8 +130,9 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Functor, typename Lhs, typename Rhs>
     class BinaryOperator final : public Expression {
     public:
-        using ResultType = typename result_of<Functor(typename Lhs::ResultType,
-                                                      typename Rhs::ResultType)>::type;
+        using ResultType = decay_t<const typename result_of<Functor(
+                                typename Lhs::ResultType,
+                                typename Rhs::ResultType)>::type>;
 
         explicit BinaryOperator(const char *operatorName, Functor &&functor, Lhs lhs, Rhs rhs) :
                 operatorName(operatorName),
@@ -164,7 +166,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Value>
     class VariableExpression final : public Expression {
     public:
-        using ResultType = Value;
+        using ResultType = decay_t<const Value>;
 
         explicit VariableExpression(const char *variableName, const Value &value, const char *file, int line) :
                 variableName(variableName),

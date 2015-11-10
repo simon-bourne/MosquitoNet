@@ -461,7 +461,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             if ( ! included(pathTree)) return Stats{};
 
             try {
-                args.applyExtraAfter(runTest, name, results); // TODO: Functor should be inferred
+                args.applyExtraAfter(runTest, name, results);
 
                 return Stats::ok();
             }
@@ -556,12 +556,11 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         RunCartesian(Functor runTest, StoreArgs<Args...> args) : runTest(move(runTest)), args(move(args)) {}
 
         void operator()(const string& name, Out<ResultContext> results) {
-            auto test = results->simpleTest(name); // TODO: Simple cartesian
+            auto test = results->simpleTest(name);
             Check check;
 
             try {
-                // TODO: Cartesian arguments
-                args.applyExtraBefore(cartesian, move(runTest), ref(check)); // TODO: Forward?
+                args.applyExtraBefore(cartesian, move(runTest), ref(check));
             }
             catch (const exception& e) {
                 check.addException(e);

@@ -30,7 +30,7 @@ namespace Enhedron {
         simple("taggedValue", [] (Check& check) {
             TaggedValue<SimpleEnum, SimpleEnum::VALUE_0, string> value(helloWorld);
 
-            check(M_VAR(*value) == string(helloWorld));
+            check(M_VAR(*value) == helloWorld);
             check(M_VAR(value->size()) == string(helloWorld).size());
 
             *value += "!";
@@ -44,10 +44,10 @@ namespace Enhedron {
             check.throws(M_VOID(toEnum<SimpleEnum>(2)));
         }),
         simple("jsonEscape", [] (Check& check) {
-            check(M_VAR(jsonEscape("")) == string(""));
-            check(M_VAR(jsonEscape(helloWorld)) == string(helloWorld)); // TODO: decay array without decaying const
-            check(M_VAR(jsonEscape("prefix\u0001postfix")) == string("prefix\\u0001postfix"));
-            check(M_VAR(jsonEscape("prefix\u0010postfix")) == string("prefix\\u0010postfix"));
+            check(M_VAR(jsonEscape("")) == "");
+            check(M_VAR(jsonEscape(helloWorld)) == helloWorld);
+            check(M_VAR(jsonEscape("prefix\u0001postfix")) == "prefix\\u0001postfix");
+            check(M_VAR(jsonEscape("prefix\u0010postfix")) == "prefix\\u0010postfix");
         }),
         cartesian(
                 choice('\"', '\\', '\b', '\f', '\n', '\r', '\t'),
