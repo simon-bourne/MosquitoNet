@@ -55,7 +55,6 @@ namespace Enhedron {
                 choice("", "postfix")
             ).
             simple("jsonEscapingCombo", [] (Check& check, char c, const string& prefix, const string& postfix) {
-                std::cerr << "c = " << int(c) << ", prefix = \"" << prefix << "\", postfix = \"" << postfix << "\"" << std::endl;
                 string input(prefix);
                 input += c;
                 input += postfix;
