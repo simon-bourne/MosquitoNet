@@ -512,7 +512,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     }
 
     template<typename Functor, typename... Args>
-    class RunCartesian final: public NoCopy {
+    class RunExhaustive final: public NoCopy {
         Functor runTest;
         StoreArgs<Args...> args;
 
@@ -522,45 +522,45 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         }
 
         template<typename BoundFunctor>
-        static void cartesianImpl(BoundFunctor&& functor) {
+        static void exhaustiveImpl(BoundFunctor&& functor) {
             functor();
         }
 
         template<typename BoundFunctor, typename Container, typename... BoundArgs>
-        static void cartesianImpl(
+        static void exhaustiveImpl(
                 BoundFunctor&& functor,
                 Container&& container,
                 BoundArgs&&... tail
             )
         {
             for (auto&& value : container) {
-                cartesianImpl(
+                exhaustiveImpl(
                         bindFirst(forward<BoundFunctor>(functor), value, index_sequence_for<BoundArgs...>()),
                         forward<BoundArgs>(tail)...
                     );
             }
         }
 
-        static void cartesian(
+        static void exhaustive(
                 Functor&& functor,
                 Check& check,
                 Args&&... extractedArgs
         )
         {
-            cartesianImpl(
+            exhaustiveImpl(
                     bindFirst(forward<Functor>(functor), ref(check), index_sequence_for<Args...>()),
                     forward<Args>(extractedArgs)...
                 );
         }
     public:
-        RunCartesian(Functor runTest, StoreArgs<Args...> args) : runTest(move(runTest)), args(move(args)) {}
+        RunExhaustive(Functor runTest, StoreArgs<Args...> args) : runTest(move(runTest)), args(move(args)) {}
 
         void operator()(const string& name, Out<ResultContext> results) {
             auto test = results->simpleTest(name);
             Check check;
 
             try {
-                args.applyExtraBefore(cartesian, move(runTest), ref(check));
+                args.applyExtraBefore(exhaustive, move(runTest), ref(check));
             }
             catch (const exception& e) {
                 check.addException(e);
@@ -581,23 +581,23 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     }
 
     template<typename... Args>
-    class Cartesian final: public NoCopy {
+    class Exhaustive final: public NoCopy {
         StoreArgs<Args...> args;
     public:
-        Cartesian(Args&&... args) : args(forward<Args>(args)...) {}
+        Exhaustive(Args&&... args) : args(forward<Args>(args)...) {}
 
         template<typename Functor>
         unique_ptr<Context> simple(string name, Functor runTest) {
-            return make_unique<Runner<RunCartesian<Functor, Args...>>>(
+            return make_unique<Runner<RunExhaustive<Functor, Args...>>>(
                     move(name),
-                    RunCartesian<Functor, Args...>(move(runTest), move(args))
+                    RunExhaustive<Functor, Args...>(move(runTest), move(args))
             );
         }
     };
 
     template<typename... Args>
-    Cartesian<Args...> cartesian(Args&&... args) {
-        return Cartesian<Args...>(forward<Args>(args)...);
+    Exhaustive<Args...> exhaustive(Args&&... args) {
+        return Exhaustive<Args...>(forward<Args>(args)...);
     }
 
     inline void list(const StringTree& pathTree, Out<Results> results) {
@@ -629,8 +629,8 @@ namespace Enhedron { namespace Test {
     using Impl::Impl_Suite::Given;
     using Impl::Impl_Suite::When;
     using Impl::Impl_Suite::Then;
-    using Impl::Impl_Suite::Cartesian;
-    using Impl::Impl_Suite::cartesian;
+    using Impl::Impl_Suite::Exhaustive;
+    using Impl::Impl_Suite::exhaustive;
     using Impl::Impl_Suite::choice;
     using Impl::Impl_Suite::constant;
     using Impl::Impl_Suite::list;

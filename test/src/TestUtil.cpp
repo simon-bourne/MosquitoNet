@@ -49,7 +49,7 @@ namespace Enhedron {
             check(M_VAR(jsonEscape("prefix\u0001postfix")) == "prefix\\u0001postfix");
             check(M_VAR(jsonEscape("prefix\u0010postfix")) == "prefix\\u0010postfix");
         }),
-        cartesian(
+        exhaustive(
                 choice('\"', '\\', '\b', '\f', '\n', '\r', '\t'),
                 choice("", "prefix"),
                 choice("", "postfix")
