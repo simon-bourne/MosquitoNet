@@ -2,16 +2,16 @@
 
 #pragma once
 
-#include <limits>
-#include <stdexcept>
 #include <type_traits>
+#include <functional>
+#include <memory>
 
 namespace Enhedron { namespace Impl { namespace Util {
-    using std::runtime_error;
-    using std::numeric_limits;
     using std::enable_if;
     using std::is_base_of;
-    using std::underlying_type;
+    using std::move;
+    using std::make_unique;
+    using std::unique_ptr;
 
     class NoCopy {
     public:
@@ -35,7 +35,7 @@ namespace Enhedron { namespace Impl { namespace Util {
     template<typename ValueType>
     class Out final {
     public:
-        template<typename Super, typename enable_if<is_base_of<ValueType, Super>::value>::type* = nullptr>
+        template<typename Super>
         Out(Out<Super> value) : value(value.value) { }
 
         explicit Out(ValueType& value) : value(&value) { }
@@ -61,64 +61,57 @@ namespace Enhedron { namespace Impl { namespace Util {
         return Out<ValueType>(value);
     }
 
-    // Assumes numerator + denominator + 1 doesn't overflow.
-    template<typename NumeratorType, typename DenominatorType>
-    constexpr NumeratorType divideRoundingUp(NumeratorType numerator, DenominatorType denominator) {
-        // Doesn't work for -ve numbers.
-        static_assert(!numeric_limits<NumeratorType>::is_signed, "NumeratorType must be unsigned");
-        static_assert(!numeric_limits<DenominatorType>::is_signed, "DenominatorType must be unsigned");
-        return (numerator + denominator - NumeratorType(1u)) / denominator;
-    }
-
-    template<typename Value, typename Modulus>
-    constexpr Value roundDownBy(Value value, Modulus modulus) {
-        // Doesn't work for -ve numbers.
-        static_assert(!numeric_limits<Value>::is_signed, "Value must be unsigned");
-        static_assert(!numeric_limits<Modulus>::is_signed, "Modulus must be unsigned");
-        return (value / modulus) * modulus;
-    }
-
-    template<typename Value, typename Modulus>
-    constexpr Value roundUpBy(Value value, Modulus modulus) {
-        // Doesn't work for -ve numbers.
-        static_assert(!numeric_limits<Value>::is_signed, "Value must be unsigned");
-        static_assert(!numeric_limits<Modulus>::is_signed, "Modulus must be unsigned");
-        return ((value + modulus - 1) / modulus) * modulus;
-    }
-
-    //! Is numerator divisible by denominator
-    template<typename NumeratorType, typename DenominatorType>
-    constexpr bool isDivisible(NumeratorType numerator, DenominatorType denominator) {
-        return (numerator / denominator) * denominator == numerator;
-    }
-
-    template<typename Enum, typename Value>
-    Enum toEnum(Value value) {
-        // underlying_type_t is only available since C++ 14
-        if (value >= 0 && value <= static_cast<typename underlying_type<Enum>::type>(Enum::LastEnumValue)) {
-            return static_cast<Enum>(value);
-        }
-
-        throw runtime_error("Value out of range for enum");
-    }
-
-    //! Explicitly state a parameter is unused.
     template<typename... Value>
     void unused(Value& ...) { }
 
-    template<typename Enum, Enum tag, typename Value>
-    class TaggedValue final {
-        Value value;
+    class Finally final: public NoCopy {
+        // std::function requires the functor to be copyable (because it's copyable).
+        struct BaseFunctor {
+            virtual ~BaseFunctor() {}
+            virtual void operator()() = 0;
+        };
+
+        template<typename Functor>
+        class DerivedFunctor final : public BaseFunctor {
+            Functor f;
+        public:
+            DerivedFunctor(Functor f) : f(move(f)) {}
+            virtual ~DerivedFunctor() {}
+            virtual void operator()() override { f(); }
+        };
+
+        unique_ptr<BaseFunctor> functor;
+        bool valid = true;
     public:
-        TaggedValue(Value value) : value(move(value)) { }
+        template<typename Functor>
+        Finally(Functor functor) : functor(make_unique<DerivedFunctor<Functor>>(move(functor))) {}
 
-        Value& operator*() { return value; }
+        Finally(Finally&& source) : functor(move(source.functor)), valid(source.valid) {
+            source.valid = false;
+        }
 
-        const Value& operator*() const { return value; }
+        Finally& operator=(Finally&& source) {
+            functor = move(source.functor);
+            valid = move(source.valid);
+            source.valid = false;
 
-        Value* operator->() { return &value; }
+            return *this;
+        }
 
-        const Value* operator->() const { return &value; }
+        ~Finally() {
+            close();
+        }
+
+        void close() {
+            if (valid) {
+                (*functor)();
+            }
+
+            valid = false;
+        }
+
+        template<typename Object>
+        static Finally wrap(Object object) { return Finally([object(move(object))] {}); }
     };
 }}}
 
@@ -127,11 +120,6 @@ namespace Enhedron {
     using Impl::Util::NoCopyMove;
     using Impl::Util::Out;
     using Impl::Util::out;
-    using Impl::Util::divideRoundingUp;
-    using Impl::Util::roundDownBy;
-    using Impl::Util::roundUpBy;
-    using Impl::Util::isDivisible;
-    using Impl::Util::toEnum;
     using Impl::Util::unused;
-    using Impl::Util::TaggedValue;
+    using Impl::Util::Finally;
 }

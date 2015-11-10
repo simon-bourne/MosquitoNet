@@ -248,114 +248,114 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     // Unary operators
     template<typename Arg, IsExpression<Arg> = nullptr>
     auto operator!(const Arg &arg) {
-        return apply("!", [](const Arg &arg) { return !arg; }, arg);
+        return apply("!", [](const auto& arg) { return !arg; }, arg);
     }
 
     template<typename Arg, IsExpression<Arg> = nullptr>
     auto operator~(const Arg &arg) {
-        return apply("~", [](const Arg &arg) { return ~arg; }, arg);
+        return apply("~", [](const auto& arg) { return ~arg; }, arg);
     }
 
     template<typename Arg, IsExpression<Arg> = nullptr>
     auto operator+(const Arg &arg) {
-        return apply("+", [](const Arg &arg) { return +arg; }, arg);
+        return apply("+", [](const auto& arg) { return +arg; }, arg);
     }
 
     template<typename Arg, IsExpression<Arg> = nullptr>
     auto operator-(const Arg &arg) {
-        return apply("-", [](const Arg &arg) { return -arg; }, arg);
+        return apply("-", [](const auto& arg) { return -arg; }, arg);
     }
 
 
     // Binary operators
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator==(const Lhs &lhs, const Rhs &rhs) {
-        return apply("==", [](const Lhs &lhs, const Rhs &rhs) { return lhs == rhs; }, lhs, rhs);
+        return apply("==", [](const auto&lhs, const auto& rhs) { return lhs == rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator!=(const Lhs &lhs, const Rhs &rhs) {
-        return apply("!=", [](const Lhs &lhs, const Rhs &rhs) { return lhs != rhs; }, lhs, rhs);
+        return apply("!=", [](const auto&lhs, const auto& rhs) { return lhs != rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator>(const Lhs &lhs, const Rhs &rhs) {
-        return apply(">", [](const Lhs &lhs, const Rhs &rhs) { return lhs > rhs; }, lhs, rhs);
+        return apply(">", [](const auto&lhs, const auto& rhs) { return lhs > rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator>=(const Lhs &lhs, const Rhs &rhs) {
-        return apply(">=", [](const Lhs &lhs, const Rhs &rhs) { return lhs >= rhs; }, lhs, rhs);
+        return apply(">=", [](const auto&lhs, const auto& rhs) { return lhs >= rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator<(const Lhs &lhs, const Rhs &rhs) {
-        return apply("<", [](const Lhs &lhs, const Rhs &rhs) { return lhs < rhs; }, lhs, rhs);
+        return apply("<", [](const auto&lhs, const auto& rhs) { return lhs < rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator<=(const Lhs &lhs, const Rhs &rhs) {
-        return apply("<=", [](const Lhs &lhs, const Rhs &rhs) { return lhs <= rhs; }, lhs, rhs);
+        return apply("<=", [](const auto&lhs, const auto& rhs) { return lhs <= rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator&&(const Lhs &lhs, const Rhs &rhs) {
-        return apply("&&", [](const Lhs &lhs, const Rhs &rhs) { return lhs && rhs; }, lhs, rhs);
+        return apply("&&", [](const auto&lhs, const auto& rhs) { return lhs && rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator||(const Lhs &lhs, const Rhs &rhs) {
-        return apply("||", [](const Lhs &lhs, const Rhs &rhs) { return lhs || rhs; }, lhs, rhs);
+        return apply("||", [](const auto&lhs, const auto& rhs) { return lhs || rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator+(const Lhs &lhs, const Rhs &rhs) {
-        return apply("+", [](const Lhs &lhs, const Rhs &rhs) { return lhs + rhs; }, lhs, rhs);
+        return apply("+", [](const auto&lhs, const auto& rhs) { return lhs + rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator-(const Lhs &lhs, const Rhs &rhs) {
-        return apply("-", [](const Lhs &lhs, const Rhs &rhs) { return lhs - rhs; }, lhs, rhs);
+        return apply("-", [](const auto&lhs, const auto& rhs) { return lhs - rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator*(const Lhs &lhs, const Rhs &rhs) {
-        return apply("*", [](const Lhs &lhs, const Rhs &rhs) { return lhs * rhs; }, lhs, rhs);
+        return apply("*", [](const auto&lhs, const auto& rhs) { return lhs * rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator/(const Lhs &lhs, const Rhs &rhs) {
-        return apply("/", [](const Lhs &lhs, const Rhs &rhs) { return lhs / rhs; }, lhs, rhs);
+        return apply("/", [](const auto&lhs, const auto& rhs) { return lhs / rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator%(const Lhs &lhs, const Rhs &rhs) {
-        return apply("%", [](const Lhs &lhs, const Rhs &rhs) { return lhs % rhs; }, lhs, rhs);
+        return apply("%", [](const auto&lhs, const auto& rhs) { return lhs % rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator&(const Lhs &lhs, const Rhs &rhs) {
-        return apply("&", [](const Lhs &lhs, const Rhs &rhs) { return lhs & rhs; }, lhs, rhs);
+        return apply("&", [](const auto&lhs, const auto& rhs) { return lhs & rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator|(const Lhs &lhs, const Rhs &rhs) {
-        return apply("|", [](const Lhs &lhs, const Rhs &rhs) { return lhs | rhs; }, lhs, rhs);
+        return apply("|", [](const auto&lhs, const auto& rhs) { return lhs | rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator^(const Lhs &lhs, const Rhs &rhs) {
-        return apply("^", [](const Lhs &lhs, const Rhs &rhs) { return lhs ^ rhs; }, lhs, rhs);
+        return apply("^", [](const auto&lhs, const auto& rhs) { return lhs ^ rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator<<(const Lhs &lhs, const Rhs &rhs) {
-        return apply("<<", [](const Lhs &lhs, const Rhs &rhs) { return lhs << rhs; }, lhs, rhs);
+        return apply("<<", [](const auto&lhs, const auto& rhs) { return lhs << rhs; }, lhs, rhs);
     }
 
     template<typename Lhs, typename Rhs, EitherIsExpression<Lhs, Rhs> = nullptr>
     auto operator>>(const Lhs &lhs, const Rhs &rhs) {
-        return apply(">>", [](const Lhs &lhs, const Rhs &rhs) { return lhs >> rhs; }, lhs, rhs);
+        return apply(">>", [](const auto&lhs, const auto& rhs) { return lhs >> rhs; }, lhs, rhs);
     }
 
     template<typename Value>
@@ -374,6 +374,13 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename FailureHandler, typename Expression>
     void ProcessFailure(Expression &&expression, vector<Variable> &&variableList) {
         FailureHandler::handleCheckFailure(expression.makeName(), move(variableList));
+    }
+
+    template<typename FailureHandler, typename Expression, typename... ContextVariableList>
+    void ProcessFailure(Expression &&expression,
+                        ContextVariableList &&... contextVariableList) {
+        vector<Variable> variableList;
+        ProcessFailure<FailureHandler>(move(expression), move(variableList), move(contextVariableList)...);
     }
 
     template<typename FailureHandler, typename Expression, typename... ContextVariableList>
@@ -399,8 +406,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     bool CheckThrowsWithFailureHandler(Expression &&expression, ContextVariableList &&... contextVariableList) {
         try {
             expression.evaluate();
-            vector<Variable> variableList;
-            ProcessFailure<FailureHandler>(move(expression), move(variableList), move(contextVariableList)...);
+            ProcessFailure<FailureHandler>(move(expression), move(contextVariableList)...);
 
             return false;
         }
@@ -421,8 +427,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     bool CheckThrowsWithFailureHandler(Expression &&expression, ContextVariableList &&... contextVariableList) {
         try {
             expression.evaluate();
-            vector<Variable> variableList;
-            ProcessFailure<FailureHandler>(move(expression), move(variableList), move(contextVariableList)...);
+            ProcessFailure<FailureHandler>(move(expression), move(contextVariableList)...);
 
             return false;
         }
@@ -430,8 +435,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             // Expected
         }
         catch (const exception &e) {
-            vector<Variable> variableList;
-            ProcessFailure<FailureHandler>(move(expression), move(variableList), move(contextVariableList)...);
+            ProcessFailure<FailureHandler>(move(expression), move(contextVariableList)...);
 
             return false;
         }
@@ -445,11 +449,14 @@ namespace Enhedron { namespace Assertion {
     using Impl::Configurable::CheckThrowsWithFailureHandler;
     using Impl::Configurable::VoidExpression;
     using Impl::Configurable::IsExpression;
+    using Impl::Configurable::Expression;
     using Impl::Configurable::Variable;
+    using Impl::Configurable::VariableExpression;
+    using Impl::Configurable::ProcessFailure;
 }}
 
-#define BOURNEODB_VAR(expression) \
+#define M_ENHEDRON_VAR(expression) \
     (::Enhedron::Assertion::Impl::Configurable::makeVariable((#expression), (expression), (__FILE__), (__LINE__)))
 
-#define BOURNEODB_VOID(expression) \
+#define M_ENHEDRON_VOID(expression) \
     (::Enhedron::Assertion::Impl::Configurable::VoidExpression((#expression), ([&] { (expression); } ), (__FILE__), (__LINE__)))

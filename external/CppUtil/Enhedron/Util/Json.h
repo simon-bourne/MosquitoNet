@@ -12,27 +12,27 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Json {
         escapedString.reserve(input.size());
 
         for (auto c : input) {
-            if (c < 0x20) {
-                char escapedChar[10]; // Should only ever need 7.
-                sprintf(escapedChar, "\\u00%1x", (unsigned int) c);
-                escapedString.append(escapedChar);
-            }
-            else {
-                switch (c) {
-                    case '\"':
-                    case '\\':
-                    case '\b':
-                    case '\f':
-                    case '\n':
-                    case '\r':
-                    case '\t':
-                        escapedString.append("\\");
-                        break;
-                    default:
-                        break;
-                }
-
-                escapedString += c;
+            switch (c) {
+                case '\"':
+                case '\\':
+                case '\b':
+                case '\f':
+                case '\n':
+                case '\r':
+                case '\t':
+                    escapedString.append("\\");
+                    escapedString += c;
+                    break;
+                default:
+                    if (c < 0x20) {
+                        char escapedChar[10]; // Should only ever need 7.
+                        sprintf(escapedChar, "\\u00%02x", static_cast<unsigned int>(c));
+                        escapedString.append(escapedChar);
+                    }
+                    else {
+                        escapedString += c;
+                    }
+                    break;
             }
         }
 

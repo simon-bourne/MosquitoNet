@@ -1,0 +1,28 @@
+containers:
+    build:
+        setup:
+        - !UbuntuRelease { version: 15.10 }
+        - !UbuntuUniverse
+        - !Install [ make, cmake, clang, gcc, g++, libboost-all-dev, ca-certificates, gdbserver ]
+        volumes:
+            /tmp: !Tmpfs {size: 1Gi}
+
+commands:
+    build: !Command
+        description: Build C++
+        accepts-arguments: false
+        container: build
+        work-dir: .
+        run: |
+            mkdir -p build
+            cd build
+            cmake ..
+            make -j 8
+    test: !Command
+        description: Run tests
+        accepts-arguments: true
+        container: build
+        work-dir: .
+        run: |
+            build/test-harness "$@"
+
