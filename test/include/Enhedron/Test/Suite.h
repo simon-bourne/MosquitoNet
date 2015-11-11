@@ -349,7 +349,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     template<typename TestClass, typename... Args>
     void runGwt(const string& name, Out<ResultContext> results, Args&&... args);
 
-    class GWT : public NoCopyMove {
+    class GWT: public NoCopy {
         Given givenText;
         When whenText;
         Then thenText;
@@ -361,58 +361,18 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         GWT(Given given, When when, Then then) :
             givenText(move(given)), whenText(move(when)), thenText(move(then)) {}
 
-        template<
-                typename Expression,
-                typename... ContextVariableList,
-                IsExpression<Expression> = nullptr
-        >
-        bool check(
-                string description,
-                Expression&& expression,
-                ContextVariableList&&... contextVariableList
-        )
-        {
-            return checker(
-                    move(description),
-                    forward<Expression>(expression),
-                    forward<ContextVariableList>(contextVariableList)...
-                );
+        void addException(const exception& e) {
+            checker.addException(e);
         }
 
-        template<
-                typename Expression,
-                typename... ContextVariableList,
-                IsExpression<Expression> = nullptr
-        >
-        bool check(
-                Expression&& expression,
-                ContextVariableList&&... contextVariableList
-        )
-        {
-            return checker(
-                    forward<Expression>(expression),
-                    forward<ContextVariableList>(contextVariableList)...
-            );
-        }
+        template<typename... Args>
+        auto check(Args&&... args) { return checker(forward<Args>(args)...); }
 
-        template<typename Exception, typename Functor, typename... ContextVariableList>
-        bool checkThrows(
-                string description,
-                ExceptionExpression<Functor> expression,
-                ContextVariableList&&... contextVariableList
-        )
-        {
-            return checker.throws(
-                    move(description),
-                    move(expression),
-                    move<ContextVariableList>(contextVariableList)...
-            );
-        }
+        template<typename... Args>
+        auto checkThrows(Args&&... args) { return checker.throws(forward<Args>(args)...); }
 
-        template<typename Value, typename... ContextVariableList>
-        void fail(VariableExpression<Value> expression, ContextVariableList... contextVariableList) {
-            checker.fail(move(expression), move(contextVariableList)...);
-        }
+        template<typename... Args>
+        auto fail(Args&&... args) { return checker.fail(forward<Args>(args)...); }
     };
 
     template<typename TestClass, typename... Args>
@@ -610,8 +570,8 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         Register::list(pathTree, results);
     }
 
-    inline void run(const StringTree& pathTree, Out<Results> results) {
-        Register::run(pathTree, results);
+    inline bool run(const StringTree& pathTree, Out<Results> results) {
+        return Register::run(pathTree, results).failed() == 0;
     }
 
     inline void list(const StringTree& pathTree) {
@@ -619,9 +579,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         list(pathTree, out(results));
     }
 
-    inline void run(const StringTree& pathTree) {
+    inline bool run(const StringTree& pathTree) {
         DefaultResults results;
-        run(pathTree, out(results));
+        return run(pathTree, out(results));
     }
 }}}}
 

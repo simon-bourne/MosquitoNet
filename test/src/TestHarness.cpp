@@ -15,12 +15,14 @@ namespace Enhedron {
     using std::string;
     using std::move;
     using std::vector;
+    using std::runtime_error;
 
     using boost::program_options::options_description;
     using boost::replace_all_copy;
     using boost::algorithm::is_any_of;
     using boost::algorithm::split;
 
+    using Util::ExitStatus;
     using ::Enhedron::Util::Options;
 
     using ::Enhedron::Container::StringTree;
@@ -43,7 +45,7 @@ namespace Enhedron {
         return move(desc);
     }
 
-    void runTests(Options options) {
+    ExitStatus runTests(Options options) {
         vector<string> pathList;
 
         auto optionalSpecifyTest = options.optional<string>(option::runTest);
@@ -80,8 +82,12 @@ namespace Enhedron {
             Test::list(pathTree);
         }
         else {
-            Test::run(pathTree);
+            if ( ! Test::run(pathTree)) {
+                return ExitStatus::SoftwareError;
+            }
         }
+
+        return ExitStatus::Ok;
     }
 
     int run(int argc, const char* argv[]) {

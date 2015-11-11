@@ -36,4 +36,3 @@ commands:
     work-dir: .
     run: |
       build/gcc/test-harness "$@"
-

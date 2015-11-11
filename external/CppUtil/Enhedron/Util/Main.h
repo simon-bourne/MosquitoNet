@@ -52,7 +52,7 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Main {
         Ok              = EX_OK,
         OutOfMemory     = 1,
         InvalidOptions  = EX_USAGE,
-        InternalError   = EX_SOFTWARE
+        SoftwareError   = EX_SOFTWARE
     };
 
     class InvalidOptions final: public exception {
@@ -235,7 +235,8 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Main {
             }
 
             try {
-                run(move(*options));
+                ExitStatus exitStatus = run(move(*options));
+                return static_cast<int>(exitStatus);
             }
             catch (const bad_alloc& e) {
                 log.error("badAlloc", "message", e.what());
@@ -245,7 +246,7 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Main {
             catch (const exception& e) {
                 log.error("unhandledException", "message", e.what());
 
-                return static_cast<int>(ExitStatus::InternalError);
+                return static_cast<int>(ExitStatus::SoftwareError);
             }
         }
         catch (const InvalidOptions& e) {
@@ -254,14 +255,15 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Main {
         catch (const exception& e) {
             cerr << "Uncaught exception initialising: " << e.what() << endl;
 
-            return static_cast<int>(ExitStatus::InternalError);
+            return static_cast<int>(ExitStatus::SoftwareError);
         }
 
-        return static_cast<int>(ExitStatus::Ok);
+        return static_cast<int>(ExitStatus::SoftwareError);
     }
 }}}}
 
 namespace Enhedron { namespace Util {
     using Impl::Main::Options;
     using Impl::Main::main;
+    using Impl::Main::ExitStatus;
 }}
