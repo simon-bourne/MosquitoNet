@@ -75,7 +75,7 @@ namespace Enhedron {
                 check(M_VAR(divideRoundingUp(11u, 10u)) == 2u);
             }),
             simple("makeDivisibleByRoundingDown", [] (Check& check) {
-                    for (auto i = 1u; i < 10u; ++i) {
+                for (auto i = 1u; i < 10u; ++i) {
                     check(M_VAR(makeDivisibleByRoundingDown(0u, i)) == 0u);
                 }
 
@@ -97,8 +97,5 @@ namespace Enhedron {
                 check(M_VAR(makeDivisibleByRoundingUp(10u, 5u)) == 10u);
             })
         )
-        // TODO: test main
-        // TODO: Test testharness
-        // TODO: Test logging
     ));
 }
