@@ -181,7 +181,7 @@ namespace Enhedron {
                 expectSuccess(check, M_EXPR(true));
                 expectSuccess(check, ! M_EXPR(false));
                 expectSuccess(check, ! M_EXPR(false) && !M_EXPR(false));
-                check(M_EXPR(sum3)(1, 2, 3) == 7);
+                check(M_EXPR(sum3)(1, 2, 3) == 6);
             }),
             simple("Failure", [] (Check& check) {
                 expectFailure(check, M_EXPR(false), "false");
