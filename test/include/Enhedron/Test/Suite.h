@@ -296,24 +296,24 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             return operator()(move(description), move(expression), move(contextVariableList)...); // TODO: forward
         }
 
-        template<typename Exception = exception, typename... ContextVariableList>
+        template<typename Exception = exception, typename Functor, typename... ContextVariableList>
         bool throws(
-                VoidExpression&& expression,
-                ContextVariableList&&... contextVariableList
+                ExceptionExpression<Functor> expression,
+                ContextVariableList... contextVariableList
         )
         {
             return throws(
                     expression.makeName(),
-                    forward<VoidExpression>(expression),
-                    forward<ContextVariableList>(contextVariableList)...
+                    move(expression),
+                    move<ContextVariableList>(contextVariableList)...
                 );
         }
 
-        template<typename Exception = exception, typename... ContextVariableList>
+        template<typename Exception = exception, typename Functor, typename... ContextVariableList>
         bool throws(
                 string description,
-                VoidExpression&& expression,
-                ContextVariableList&&... contextVariableList
+                ExceptionExpression<Functor> expression,
+                ContextVariableList... contextVariableList
         )
         {
             auto ok = CheckThrowsWithFailureHandler<FailureHandler, Exception>(
@@ -346,6 +346,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using When = TaggedValue<Tag, Tag::When, string>;
     using Then = TaggedValue<Tag, Tag::Then, string>;
 
+    template<typename TestClass, typename... Args>
+    void runGwt(const string& name, Out<ResultContext> results, Args&&... args);
+
     class GWT : public NoCopyMove {
         Given givenText;
         When whenText;
@@ -353,31 +356,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         Check checker;
 
         template<typename TestClass, typename... Args>
-        friend void runGwt(Args&&... args, const string& name, Out<ResultContext> results) {
-            auto gwtResults(results->gwtTest(name));
-            auto given(gwtResults->init());
-            TestClass test{forward<Args>(args)...};
-            given.close();
-
-            gwtResults->given(*test.givenText);
-
-            try {
-                {
-                    auto whenBlock(gwtResults->when(*test.whenText));
-                    test.when();
-                }
-
-                {
-                    auto thenBlock(gwtResults->then(*test.thenText));
-                    test.then();
-                }
-            }
-            catch (const exception& e) {
-                test.checker.addException(e);
-            }
-
-            throwOnFailure(test.checker, name, out(*gwtResults));
-        }
+        friend void runGwt(const string& name, Out<ResultContext> results, Args&&... args);
     public:
         GWT(Given given, When when, Then then) :
             givenText(move(given)), whenText(move(when)), thenText(move(then)) {}
@@ -416,17 +395,17 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             );
         }
 
-        template<typename Exception, typename... ContextVariableList>
+        template<typename Exception, typename Functor, typename... ContextVariableList>
         bool checkThrows(
                 string description,
-                VoidExpression&& expression,
+                ExceptionExpression<Functor> expression,
                 ContextVariableList&&... contextVariableList
         )
         {
             return checker.throws(
                     move(description),
-                    forward<VoidExpression>(expression),
-                    forward<ContextVariableList>(contextVariableList)...
+                    move(expression),
+                    move<ContextVariableList>(contextVariableList)...
             );
         }
 
@@ -435,6 +414,33 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             checker.fail(move(expression), move(contextVariableList)...);
         }
     };
+
+    template<typename TestClass, typename... Args>
+    void runGwt(const string& name, Out<ResultContext> results, Args&&... args) {
+        auto gwtResults(results->gwtTest(name));
+        auto given(gwtResults->init());
+        TestClass test{forward<Args>(args)...};
+        given.close();
+
+        gwtResults->given(*test.givenText);
+
+        try {
+            {
+                auto whenBlock(gwtResults->when(*test.whenText));
+                test.when();
+            }
+
+            {
+                auto thenBlock(gwtResults->then(*test.thenText));
+                test.then();
+            }
+        }
+        catch (const exception& e) {
+            test.checker.addException(e);
+        }
+
+        throwOnFailure(test.checker, name, out(*gwtResults));
+    }
 
     template<typename Functor, typename... Args>
     class Runner final: public Context {
@@ -461,7 +467,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             if ( ! included(pathTree)) return Stats{};
 
             try {
-                args.applyExtraAfter(runTest, name, results);
+                args.applyExtraBefore(runTest, name, results);
 
                 return Stats::ok();
             }
@@ -487,7 +493,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     public:
         RunSimple(Functor runTest) : runTest(move(runTest)) {}
 
-        void operator()(Args&&... args, const string& name, Out<ResultContext> results) {
+        void operator()(const string& name, Out<ResultContext> results, Args&&... args) {
             auto test = results->simpleTest(name);
             Check check;
 

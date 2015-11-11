@@ -1,12 +1,13 @@
 language: cpp
 
 compiler:
-#  - gcc
-  - clang
+  - gcc
+# clang doesn't link with boost program_options.
+#  - clang
 
 env:
   - BUILD_TYPE=Debug
-#  - BUILD_TYPE=Release
+  - BUILD_TYPE=Release
 
 install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y

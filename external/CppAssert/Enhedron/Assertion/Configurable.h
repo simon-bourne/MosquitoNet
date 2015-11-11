@@ -134,7 +134,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
                                 typename Lhs::ResultType,
                                 typename Rhs::ResultType)>::type>;
 
-        explicit BinaryOperator(const char *operatorName, Functor &&functor, Lhs lhs, Rhs rhs) :
+        explicit BinaryOperator(const char *operatorName, Functor functor, Lhs lhs, Rhs rhs) :
                 operatorName(operatorName),
                 functor(move(functor)),
                 lhs(move(lhs)),
@@ -193,9 +193,10 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         int line;
     };
 
-    class VoidExpression final : public Expression {
+    template<typename Functor>
+    class ExceptionExpression final : public Expression {
     public:
-        explicit VoidExpression(const char *expressionText, function<void()> &&expression, const char *file,
+        explicit ExceptionExpression(const char *expressionText, Functor expression, const char *file,
                                 int line) :
                 expressionText(expressionText),
                 expression(move(expression)),
@@ -206,13 +207,24 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             return expressionText;
         }
 
-        void evaluate() const {
-            expression();
+        void appendVariables(vector<Variable> &variableList) const {
+            variableList.emplace_back(expressionText, what, file, line);
+        }
+
+        void evaluate() {
+            try {
+                expression();
+            }
+            catch (const exception& e) {
+                what = e.what();
+                throw;
+            }
         }
 
     private:
         const char *expressionText;
-        function<void()> &&expression;
+        Functor expression;
+        string what = "no exception";
         const char *file;
         int line;
     };
@@ -228,22 +240,22 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             is_base_of<Expression, Lhs>::value || is_base_of<Expression, Rhs>::value>::type *;
 
     template<typename Operation, typename Lhs, typename Rhs, pair<IsExpression<Lhs>, IsExpression<Rhs>> * = nullptr>
-    auto apply(const char *operationName, Operation &&operation, const Lhs &lhs, const Rhs &rhs) {
+    auto apply(const char *operationName, Operation operation, const Lhs &lhs, const Rhs &rhs) {
         return BinaryOperator<Operation, Lhs, Rhs>(operationName, move(operation), lhs, rhs);
     }
 
     template<typename Operation, typename Lhs, typename Rhs, pair<IsExpression<Lhs>, IsNotExpression<Rhs>> * = nullptr>
-    auto apply(const char *operationName, Operation &&operation, const Lhs &lhs, const Rhs &rhs) {
+    auto apply(const char *operationName, Operation operation, const Lhs &lhs, const Rhs &rhs) {
         return apply(operationName, move(operation), lhs, Literal<Rhs>(rhs));
     }
 
     template<typename Operation, typename Lhs, typename Rhs, pair<IsNotExpression<Lhs>, IsExpression<Rhs>> * = nullptr>
-    auto apply(const char *operationName, Operation &&operation, const Lhs &lhs, const Rhs &rhs) {
+    auto apply(const char *operationName, Operation operation, const Lhs &lhs, const Rhs &rhs) {
         return apply(operationName, move(operation), Literal<Lhs>(lhs), rhs);
     }
 
     template<typename Operation, typename Arg, IsExpression<Arg> = nullptr>
-    auto apply(const char *operationName, Operation &&operation, const Arg &arg) {
+    auto apply(const char *operationName, Operation operation, const Arg &arg) {
         return UnaryOperator<Operation, Arg>(operationName, move(operation), arg);
     }
 
@@ -362,35 +374,39 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
     template<typename Value>
     auto makeVariable(const char *name, const Value &value, const char *file, int line) {
-        return VariableExpression<Value>(name, value, file, line);
+        return VariableExpression<Value>(name, move(value), file, line);
+    }
+
+    template<typename Functor>
+    auto makeException(const char *name, Functor functor, const char *file, int line) {
+        return ExceptionExpression<Functor>(name, move(functor), file, line);
     }
 
     template<typename FailureHandler, typename Expression, typename VariableValue, typename... ContextVariableList>
-    void ProcessFailure(Expression &&expression, vector<Variable> &&variableList,
-                        VariableExpression<VariableValue> &&variableExpression,
-                        ContextVariableList &&... contextVariableList) {
+    void ProcessFailureImpl(Expression expression, vector<Variable> variableList,
+                        VariableExpression<VariableValue> variableExpression,
+                        ContextVariableList... contextVariableList) {
         variableExpression.appendVariables(variableList);
-        ProcessFailure<FailureHandler>(move(expression), move(variableList), move(contextVariableList)...);
+        ProcessFailureImpl<FailureHandler>(move(expression), move(variableList), move(contextVariableList)...);
     }
 
     template<typename FailureHandler, typename Expression>
-    void ProcessFailure(Expression &&expression, vector<Variable> &&variableList) {
+    void ProcessFailureImpl(Expression expression, vector<Variable> variableList) {
         FailureHandler::handleCheckFailure(expression.makeName(), move(variableList));
     }
 
     template<typename FailureHandler, typename Expression, typename... ContextVariableList>
-    void ProcessFailure(Expression &&expression,
-                        ContextVariableList &&... contextVariableList) {
+    void ProcessFailure(Expression expression,
+                        ContextVariableList... contextVariableList) {
         vector<Variable> variableList;
-        ProcessFailure<FailureHandler>(move(expression), move(variableList), move(contextVariableList)...);
+        expression.appendVariables(variableList);
+        ProcessFailureImpl<FailureHandler>(move(expression), move(variableList), move(contextVariableList)...);
     }
 
     template<typename FailureHandler, typename Expression, typename... ContextVariableList>
-    bool CheckWithFailureHandler(Expression &&expression, ContextVariableList &&... contextVariableList) {
+    bool CheckWithFailureHandler(Expression expression, ContextVariableList... contextVariableList) {
         if (!static_cast<bool>(expression.evaluate())) {
-            vector<Variable> variableList;
-            expression.appendVariables(variableList);
-            ProcessFailure<FailureHandler>(move(expression), move(variableList), move(contextVariableList)...);
+            ProcessFailure<FailureHandler>(move(expression), move(contextVariableList)...);
 
             return false;
         }
@@ -405,7 +421,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             typename... ContextVariableList,
             typename enable_if<is_same<Exception, exception>::value>::type * = nullptr
     >
-    bool CheckThrowsWithFailureHandler(Expression &&expression, ContextVariableList &&... contextVariableList) {
+    bool CheckThrowsWithFailureHandler(Expression expression, ContextVariableList... contextVariableList) {
         try {
             expression.evaluate();
             ProcessFailure<FailureHandler>(move(expression), move(contextVariableList)...);
@@ -426,7 +442,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             typename... ContextVariableList,
             typename enable_if<!is_same<Exception, exception>::value>::type * = nullptr
     >
-    bool CheckThrowsWithFailureHandler(Expression &&expression, ContextVariableList &&... contextVariableList) {
+    bool CheckThrowsWithFailureHandler(Expression expression, ContextVariableList... contextVariableList) {
         try {
             expression.evaluate();
             ProcessFailure<FailureHandler>(move(expression), move(contextVariableList)...);
@@ -449,7 +465,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 namespace Enhedron { namespace Assertion {
     using Impl::Configurable::CheckWithFailureHandler;
     using Impl::Configurable::CheckThrowsWithFailureHandler;
-    using Impl::Configurable::VoidExpression;
+    using Impl::Configurable::ExceptionExpression;
     using Impl::Configurable::IsExpression;
     using Impl::Configurable::Expression;
     using Impl::Configurable::Variable;
@@ -461,7 +477,7 @@ namespace Enhedron { namespace Assertion {
     (::Enhedron::Assertion::Impl::Configurable::makeVariable((#expression), (expression), (__FILE__), (__LINE__)))
 
 #define M_ENHEDRON_VOID(expression) \
-    (::Enhedron::Assertion::Impl::Configurable::VoidExpression((#expression), ([&] { (expression); } ), (__FILE__), (__LINE__)))
+    (::Enhedron::Assertion::Impl::Configurable::makeException((#expression), (expression), (__FILE__), (__LINE__)))
 
 #ifdef NDEBUG
 #define M_DEBUG(expression) \

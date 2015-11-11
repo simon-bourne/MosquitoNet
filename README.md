@@ -133,4 +133,5 @@ Some other stuff that really needs fixing:
 - It's only been built on linux with gcc 4.9.
 - Exhaustive testing doesn't tell you which scenarios failed, it just logs the check that failed.
 - Documentation.
+- It depends on boost. This is the only thing stopping it compile with clang.
 - Probably a load more stuff. Please log an issue or add a +1 to an existing issue.

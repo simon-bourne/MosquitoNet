@@ -40,8 +40,8 @@ namespace Enhedron {
         simple("toEnum", [] (Check& check) {
             check(M_VAR(toEnum<SimpleEnum>(0)) == SimpleEnum::VALUE_0);
             check(M_VAR(toEnum<SimpleEnum>(1)) == SimpleEnum::VALUE_1);
-            check.throws(M_VOID(toEnum<SimpleEnum>(-1)));
-            check.throws(M_VOID(toEnum<SimpleEnum>(2)));
+            check.throws(M_VOID([] { toEnum<SimpleEnum>(-1); } ));
+            check.throws(M_VOID([] { toEnum<SimpleEnum>(2); } ));
         }),
         simple("jsonEscape", [] (Check& check) {
             check(M_VAR(jsonEscape("")) == "");

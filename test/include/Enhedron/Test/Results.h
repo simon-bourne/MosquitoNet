@@ -118,7 +118,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
     public:
         DefaultResultContext(const string& name) : block(log.infoBlock("context", "name", name)) {}
 
-        virtual unique_ptr<ResultContext> child(const string& name) {
+        virtual unique_ptr<ResultContext> child(const string& name) override {
             return make_unique<DefaultResultContext<ResultContext>>(name);
         }
 
@@ -126,11 +126,11 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
             log.info("testCase", "name", name);
         }
 
-        virtual unique_ptr<ResultSimpleTest> simpleTest(const string& name) {
+        virtual unique_ptr<ResultSimpleTest> simpleTest(const string& name) override {
             return make_unique<DefaultResultSimpleTest>(name);
         }
 
-        virtual unique_ptr<ResultGWTTest> gwtTest(const string& name) {
+        virtual unique_ptr<ResultGWTTest> gwtTest(const string& name) override {
             return make_unique<DefaultResultGWTTest>(name);
         }
     };
