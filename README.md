@@ -14,4 +14,6 @@ combination of these values.
 
 - Nested contexts.
 
+- Tests will run through all checks and report all errors.
+
 - Minimal use of macros. They're are all prefixed with M_ so you know if you're in C++ land or crazy macro city.
