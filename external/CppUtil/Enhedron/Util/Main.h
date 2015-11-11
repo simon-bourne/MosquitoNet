@@ -70,7 +70,6 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Main {
             message << "Required option " << name << " is missing.";
             commandLineError(message.str());
 
-            M_FAIL();
             throw logic_error("Shouldn't ever get here");
         }
 

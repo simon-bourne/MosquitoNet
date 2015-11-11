@@ -462,3 +462,20 @@ namespace Enhedron { namespace Assertion {
 
 #define M_ENHEDRON_VOID(expression) \
     (::Enhedron::Assertion::Impl::Configurable::VoidExpression((#expression), ([&] { (expression); } ), (__FILE__), (__LINE__)))
+
+#ifdef NDEBUG
+#define M_DEBUG(expression) \
+        { static_cast<void>(0); }
+#else
+#define M_ENHEDRON_DEBUG(expression) \
+        { expression; }
+#endif // NDEBUG
+
+
+#ifdef M_ENHEDRON_DO_DEBUG_EXTRA
+#define M_DEBUG_EXTRA(expression) \
+        { expression; }
+#else
+#define M_ENHEDRON_DEBUG_EXTRA(expression) \
+        { static_cast<void>(0); }
+#endif

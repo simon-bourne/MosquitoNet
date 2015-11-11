@@ -29,28 +29,7 @@ namespace Enhedron {
     using Impl::Assertion::Assert;
 }
 
-#define M_VAR(expression) \
-        M_ENHEDRON_VAR(expression)
-
-#define M_VOID(expression) \
-        M_ENHEDRON_VOID(expression)
-
-#define M_FAIL(expr) \
-  (::Enhedron::Assertion::failWithSourceLocation("fail", (#expr), __FILE__, __LINE__, __func__))
-
-#ifdef NDEBUG
-    #define M_DEBUG(expression) \
-        { static_cast<void>(0); }
-#else
-    #define M_DEBUG(expression) \
-        { expression; }
-#endif // NDEBUG
-
-
-#ifdef M_ENHEDRON_DEBUG_EXTRA
-    #define M_DEBUG_EXTRA(expression) \
-        { expression; }
-#else
-    #define M_DEBUG_EXTRA(expression) \
-        { static_cast<void>(0); }
-#endif
+#define M_VAR M_ENHEDRON_VAR
+#define M_VOID M_ENHEDRON_VOID
+#define M_DEBUG M_ENHEDRON_DEBUG
+#define M_DEBUG_EXTRA M_ENHEDRON_DEBUG_EXTRA
