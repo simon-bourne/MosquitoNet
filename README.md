@@ -4,8 +4,8 @@
 
 ## This project is still in it's infancy!
  
-I'm using it and it's working well for me, but if there's something you don't like, please log an issue or reply with +1
-to and existing issue.
+I'm using it and it's working well for me, but if there's something you don't like or want, please log an issue or reply
+with +1 to and existing issue.
 
 ## Features
 
@@ -32,7 +32,11 @@ static Test::Unit u(context("Util",
             choice("", "prefix"),
             choice("", "postfix")
         ).
-        simple("jsonEscapingCombo", [] (Check& check, char c, const string& prefix, const string& postfix) {
+        simple("jsonEscapingCombo", [] (
+                Check& check,
+                char c, const string& prefix, const string& postfix
+            )
+        {
             string input(prefix);
             input += c;
             input += postfix;
@@ -52,8 +56,8 @@ Some things to note:
 
 - `choice` simply returns a `vector<decltype(firstArgument)>`. We could have used anything that works in a range based
 for loop. Perhaps a `boost::irange` or a container that generates `N` random numbers, or even a constant.
-- `static Test::Unit u(...` creates a context to which we can add many unit tests or sub-contexts.
-- `context("Util", ...)` creates a nested context. Contexts can be arbitrarily nested.
+- `static Test::Unit u(...)` creates a context to which we can add many unit tests or sub-contexts.
+- `context("Util", ...)` creates a nested context. There's no limit on the depth of nesting.
 - `M_VAR` is the only macro used here. All it does is add file and line information to a C++ function call.
 
 That's cool, but I really just want a quick and simple test.
@@ -124,5 +128,5 @@ Some other stuff that really needs fixing:
 
 - It's only been built on linux with gcc 4.9.
 - Exhaustive testing doesn't tell you which scenarios failed, it just logs the check that failed.
-- Probably a load more stuff. Please log an issue or add a +1 to an existing issue.
 - Documentation.
+- Probably a load more stuff. Please log an issue or add a +1 to an existing issue.
