@@ -480,7 +480,7 @@ namespace Enhedron { namespace Assertion {
     (::Enhedron::Assertion::Impl::Configurable::makeException((#expression), (expression), (__FILE__), (__LINE__)))
 
 #ifdef NDEBUG
-#define M_DEBUG(expression) \
+#define M_ENHEDRON_DEBUG(expression) \
         { static_cast<void>(0); }
 #else
 #define M_ENHEDRON_DEBUG(expression) \
@@ -489,7 +489,7 @@ namespace Enhedron { namespace Assertion {
 
 
 #ifdef M_ENHEDRON_DO_DEBUG_EXTRA
-#define M_DEBUG_EXTRA(expression) \
+#define M_ENHEDRON_DEBUG_EXTRA(expression) \
         { expression; }
 #else
 #define M_ENHEDRON_DEBUG_EXTRA(expression) \
