@@ -10,8 +10,9 @@ env:
 
 before_install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo add-apt-repository ppa:boost-latest/stable -y
   - sudo apt-get update -qq
-  - sudo apt-get install -y libboost-all-dev
+  - sudo apt-get install -y boost1.55
   - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq libstdc++-4.9-dev; fi
   - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.9; fi
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
