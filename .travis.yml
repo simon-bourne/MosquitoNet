@@ -12,7 +12,7 @@ env:
 before_install:
   - wget http://files.zerogw.com/vagga/vagga-0.4.1.tar.xz
   - tar -xJf vagga-0.4.1.tar.xz
-  - vagga _build build
+  - vagga/vagga _build build
 
 install:
   - vagga/vagga build
