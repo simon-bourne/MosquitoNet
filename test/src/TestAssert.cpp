@@ -72,10 +72,10 @@ namespace Enhedron {
         try {
             testAssert(move(expression));
 
-            check( ! M_VAR(bool(FailureHandler::failure())));
+            check( ! M_EXPR(bool(FailureHandler::failure())));
         }
         catch (const exception& e){
-            check.fail(M_VAR(e.what()));
+            check.fail(M_EXPR(e.what()));
         }
     }
 
@@ -87,12 +87,12 @@ namespace Enhedron {
             testAssert(move(expression));
             auto& failure = FailureHandler::failure();
 
-            if (check(M_VAR(bool(failure))) && expressionText) {
-                check(M_VAR(failure->expressionText) == expressionText);
+            if (check(M_EXPR(bool(failure))) && expressionText) {
+                check(M_EXPR(failure->expressionText) == expressionText);
             }
         }
         catch (const exception& e){
-            check.fail(M_VAR(e.what()));
+            check.fail(M_EXPR(e.what()));
         }
     }
 
@@ -102,14 +102,14 @@ namespace Enhedron {
         bool result = op(lhs, rhs);
 
         if (result) {
-            expectSuccess(check, op(M_VAR(lhs), M_VAR(rhs)));
-            expectSuccess(check, op(lhs, M_VAR(rhs)));
-            expectSuccess(check, op(M_VAR(lhs), rhs));
+            expectSuccess(check, op(M_EXPR(lhs), M_EXPR(rhs)));
+            expectSuccess(check, op(lhs, M_EXPR(rhs)));
+            expectSuccess(check, op(M_EXPR(lhs), rhs));
         }
         else {
-            expectFailure(check, op(M_VAR(lhs), M_VAR(rhs)));
-            expectFailure(check, op(lhs, M_VAR(rhs)));
-            expectFailure(check, op(M_VAR(lhs), rhs));
+            expectFailure(check, op(M_EXPR(lhs), M_EXPR(rhs)));
+            expectFailure(check, op(lhs, M_EXPR(rhs)));
+            expectFailure(check, op(M_EXPR(lhs), rhs));
         }
     }
 
@@ -126,9 +126,9 @@ namespace Enhedron {
         Operator op;
         auto result = op(lhs, rhs);
 
-        expectSuccess(check, op(M_VAR(lhs), M_VAR(rhs)) == result);
-        expectSuccess(check, op(lhs, M_VAR(rhs)) == result);
-        expectSuccess(check, op(M_VAR(lhs), rhs) == result);
+        expectSuccess(check, op(M_EXPR(lhs), M_EXPR(rhs)) == result);
+        expectSuccess(check, op(lhs, M_EXPR(rhs)) == result);
+        expectSuccess(check, op(M_EXPR(lhs), rhs) == result);
     }
 
     template<typename Operator>
@@ -162,25 +162,30 @@ namespace Enhedron {
 
             auto& failure = FailureHandler::failure();
 
-            if (check(M_VAR(bool(failure))) && expressionText) {
-                check(M_VAR(failure->expressionText) == expressionText);
+            if (check(M_EXPR(bool(failure))) && expressionText) {
+                check(M_EXPR(failure->expressionText) == expressionText);
             }
         }
         catch (const exception& e) {
-            check.fail(M_VAR(e.what()));
+            check.fail(M_EXPR(e.what()));
         }
+    }
+
+    int sum3(int x, int y, int z) {
+        return x + y + z;
     }
 
     Test::Unit u(
         context("Assert",
             simple("Success", [] (Check& check) {
-                expectSuccess(check, M_VAR(true));
-                expectSuccess(check, !M_VAR(false));
-                expectSuccess(check, !M_VAR(false) && !M_VAR(false));
+                expectSuccess(check, M_EXPR(true));
+                expectSuccess(check, ! M_EXPR(false));
+                expectSuccess(check, ! M_EXPR(false) && !M_EXPR(false));
+                check(M_EXPR(sum3)(1, 2, 3) == 7);
             }),
             simple("Failure", [] (Check& check) {
-                expectFailure(check, M_VAR(false), "false");
-                expectFailure(check, M_VAR(false) || M_VAR(false), "(false || false)");
+                expectFailure(check, M_EXPR(false), "false");
+                expectFailure(check, M_EXPR(false) || M_EXPR(false), "(false || false)");
             }),
             simple("ThrowSucceeds", [] (Check& check) {
                 testAssertThrows<exception>(M_VOID([] { throw runtime_error("test"); }));

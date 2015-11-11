@@ -9,6 +9,7 @@
 #include <vector>
 #include <stdexcept>
 #include <functional>
+#include<tuple>
 
 namespace Enhedron { namespace Assertion {
     template<typename Value, typename Enable = void>
@@ -40,18 +41,27 @@ namespace Enhedron { namespace Assertion {
 }}
 
 namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurable {
+    using Util::StoreArgs;
+
     using std::enable_if;
     using std::is_base_of;
     using std::is_same;
     using std::ostringstream;
     using std::string;
     using std::move;
+    using std::forward;
     using std::vector;
-    using std::result_of;
+    using std::result_of_t;
     using std::exception;
     using std::function;
     using std::pair;
     using std::decay_t;
+    using std::tuple;
+    using std::tie;
+    using std::add_lvalue_reference_t;
+    using std::index_sequence;
+    using std::index_sequence_for;
+    using std::get;
 
     class Expression {
     };
@@ -100,7 +110,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Functor, typename Arg>
     class UnaryOperator final : public Expression {
     public:
-        using ResultType = decay_t<const typename result_of<Functor(typename Arg::ResultType)>::type>;
+        using ResultType = decay_t<const result_of_t<Functor(typename Arg::ResultType)>>;
 
         explicit UnaryOperator(const char *operatorName, Functor functor, Arg arg) : operatorName(operatorName),
                                                                                      functor(move(functor)),
@@ -130,9 +140,9 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Functor, typename Lhs, typename Rhs>
     class BinaryOperator final : public Expression {
     public:
-        using ResultType = decay_t<const typename result_of<Functor(
+        using ResultType = decay_t<const result_of_t<Functor(
                                 typename Lhs::ResultType,
-                                typename Rhs::ResultType)>::type>;
+                                typename Rhs::ResultType)>>;
 
         explicit BinaryOperator(const char *operatorName, Functor functor, Lhs lhs, Rhs rhs) :
                 operatorName(operatorName),
@@ -163,6 +173,46 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         Rhs rhs;
     };
 
+    template<typename Functor, typename... Args>
+    class Function final : public Expression {
+    public:
+        using ResultType = decay_t<const result_of_t<Functor&(Args...)>>;
+
+        explicit Function(const char *name, Functor& functor, const char *file, int line, Args&&... args) :
+                name(name),
+                functor(functor), // TODO: Thoroughly understand when using references.
+                file(file),
+                line(line),
+                args(tie(args...))
+        {}
+
+        string makeName() const {
+            ostringstream valueString;
+            valueString << name << "(" << ")"; // TODO
+
+            return valueString.str();
+        }
+
+        void appendVariables(vector<Variable> &variableList) const {
+            // TODO:
+        }
+
+        ResultType evaluate() const {
+            return evaluate(index_sequence_for<Args...>());
+        }
+    private:
+        template<size_t... Indices>
+        ResultType evaluate(index_sequence<Indices...>) const {
+            return functor(get<Indices>(args)...);
+        }
+
+        const char *name;
+        Functor& functor;
+        const char* file;
+        int line;
+        tuple<add_lvalue_reference_t<Args>...> args;
+    };
+
     template<typename Value>
     class VariableExpression final : public Expression {
     public:
@@ -186,9 +236,14 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             return value;
         }
 
+        template<typename... Args>
+        Function<Value, Args...> operator()(Args&&... args) {
+            return Function<Value, Args...>(variableName, value, file, line, forward<Args>(args)...);
+        }
+
     private:
         const char *variableName;
-        const Value &value;
+        const Value& value;
         const char *file;
         int line;
     };

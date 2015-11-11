@@ -46,7 +46,7 @@ static Test::Unit u(context("Util",
             result += c;
             result += postfix;
 
-            check(M_VAR(jsonEscape(input)) == result);
+            check(M_EXPR(jsonEscape(input)) == result);
         }
     )
 );
@@ -58,7 +58,7 @@ Some things to note:
 for loop. Perhaps a `boost::irange` or a container that generates `N` random numbers, or even a constant.
 - `static Test::Unit u(...)` creates a context to which we can add many unit tests or sub-contexts.
 - `context("Util", ...)` creates a nested context. There's no limit on the depth of nesting.
-- `M_VAR` is the only macro used here. All it does is add file and line information to a C++ function call.
+- `M_EXPR` is the only macro used here. All it does is add file and line information to a C++ function call.
 
 That's cool, but I really just want a quick and simple test.
 
@@ -66,10 +66,10 @@ No problem:
 
 ```C++
 simple("jsonEscape", [] (Check& check) {
-    check(M_VAR(jsonEscape("")) == "");
-    check(M_VAR(jsonEscape(helloWorld)) == helloWorld);
-    check(M_VAR(jsonEscape("prefix\u0001postfix")) == "prefix\\u0001postfix");
-    check(M_VAR(jsonEscape("prefix\u0010postfix")) == "prefix\\u0010postfix");
+    check(M_EXPR(jsonEscape("")) == "");
+    check(M_EXPR(jsonEscape(helloWorld)) == helloWorld);
+    check(M_EXPR(jsonEscape("prefix\u0001postfix")) == "prefix\\u0001postfix");
+    check(M_EXPR(jsonEscape("prefix\u0010postfix")) == "prefix\\u0010postfix");
 })
 ```
 

@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include "Enhedron/Assertion.h"
-
 #include <type_traits>
+#include <tuple>
 #include <utility>
 
 namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgramming {
@@ -13,10 +12,11 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
     using std::index_sequence_for;
     using std::forward;
     using std::get;
+    using std::remove_reference_t;
 
     template<typename... Args>
     class StoreArgs final: public NoCopy {
-        tuple<typename std::remove_reference<Args>::type...> args;
+        tuple<remove_reference_t<Args>...> args;
 
         template <typename Functor, size_t... Indices, typename... ExtraArgs>
         void applyExtraBeforeImpl(Functor&& functor, index_sequence<Indices...>, ExtraArgs&&... extraArgs) {
