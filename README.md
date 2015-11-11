@@ -117,6 +117,10 @@ Easy.
     );
 ```
 
+## Further Examples
+
+Take a look at the tests for [Util](test/src/TestUtil.cpp) or [Container](test/src/TestContainer.cpp) 
+
 ## TODO
 
 I like the sound of this so far. What output formats do you support?
