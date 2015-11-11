@@ -5,7 +5,7 @@
 ## This project is still in it's infancy!
  
 I'm using it and it's working well for me, but if there's something you don't like or want, please log an issue or reply
-with +1 to and existing issue.
+with +1 to an existing issue.
 
 ## Features
 

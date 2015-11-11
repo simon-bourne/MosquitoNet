@@ -171,7 +171,7 @@ namespace Enhedron {
         }
     }
 
-    static Test::Unit u(
+    Test::Unit u(
         context("Assert",
             simple("Success", [] (Check& check) {
                 expectSuccess(check, M_VAR(true));
