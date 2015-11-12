@@ -84,7 +84,7 @@ int b = 2;
 int c = 3;
 int contextVariable1 = 10;
 const char* contextVariable2 = "Looks like something went wrong!";
-check(M_EXPR(sum3)(a, b, c) == 7 && a == b, M_EXPR(contextVariable1), M_EXPR(contextVariable2));
+check(M_EXPR(sum3)(a, b, c) == 7 && M_EXPR(a) == M_EXPR(b), M_EXPR(contextVariable1), M_EXPR(contextVariable2));
 ```
 
 will fail with the message:
