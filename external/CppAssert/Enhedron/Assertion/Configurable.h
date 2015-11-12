@@ -183,12 +183,12 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     public:
         using ResultType = decay_t<const result_of_t<Functor&(Args...)>>;
 
-        explicit Function(const char *name, Functor& functor, const char *file, int line, Args&&... args) :
+        explicit Function(const char *name, Functor&& functor, const char *file, int line, Args&&... args) :
                 name(name),
-                functor(functor), // TODO: Thoroughly understand when using references.
+                functor(move(functor)), // TODO: Thoroughly understand when using references.
                 file(file),
                 line(line),
-                args(tie(args...))
+                args(forward<Args>(args)...)
         {}
 
         string makeName() const {
@@ -234,18 +234,18 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         void addParameterStrings() {}
 
         const char *name;
-        Functor& functor;
+        Functor functor; // TODO: Fix so this works with functors and function pointers.
         const char* file;
         int line;
-        tuple<add_lvalue_reference_t<Args>...> args;
+        tuple<Args...> args;
     };
 
     template<typename Value>
-    class VariableExpressionBase final : public Expression {
+    class VariableRefExpression final : public Expression {
     public:
         using ResultType = decay_t<const Value>;
 
-        explicit VariableExpressionBase(const char *variableName, Value value, const char *file, int line) :
+        explicit VariableRefExpression(const char *variableName, const Value& value, const char *file, int line) :
                 variableName(variableName),
                 value(value),
                 file(file),
@@ -264,8 +264,46 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         }
 
         template<typename... Args>
+        auto operator()(Args&&... args) {
+            return Function<std::reference_wrapper<Value>, Args...>(
+                    variableName, std::cref(value), file, line, forward<Args>(args)...
+                );
+        }
+
+    private:
+        const char *variableName;
+        const Value& value;
+        const char *file;
+        int line;
+    };
+
+    template<typename Value>
+    class VariableValueExpression final : public Expression {
+    public:
+        using ResultType = decay_t<const Value>;
+
+        explicit VariableValueExpression(const char *variableName, Value&& value, const char *file, int line) :
+                variableName(variableName),
+                value(move(value)),
+                file(file),
+                line(line) { }
+
+        string makeName() const {
+            return variableName;
+        }
+
+        void appendVariables(vector<Variable> &variableList) const {
+            variableList.emplace_back(variableName, Convert<Value>::toString(value), file, line);
+        }
+
+        ResultType evaluate() const {
+            return value;
+        }
+
+        // Only call this once! It will move the underlying value.
+        template<typename... Args>
         Function<Value, Args...> operator()(Args&&... args) {
-            return Function<Value, Args...>(variableName, (value), file, line, forward<Args>(args)...);
+            return Function<Value, Args...>(variableName, move(value), file, line, forward<Args>(args)...);
         }
 
     private:
@@ -276,7 +314,24 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     };
 
     template<typename Value>
-    using VariableExpression = VariableExpressionBase<const Value&>;
+    auto makeVariable(const char *name, const Value& value, const char *file, int line) {
+        return VariableRefExpression<const Value>(name, value, file, line);
+    }
+
+    template<typename Value>
+    auto makeVariable(const char *name, Value& value, const char *file, int line) {
+        return VariableRefExpression<Value>(name, value, file, line);
+    }
+
+    template<typename Value, enable_if_t<std::is_function<Value>::value>* = nullptr>
+    auto makeVariable(const char *name, Value&& value, const char *file, int line) {
+        return VariableValueExpression<std::reference_wrapper<Value>>(name, std::ref(value), file, line);
+    }
+
+    template<typename Value, enable_if_t< ! std::is_function<Value>::value>* = nullptr>
+    auto makeVariable(const char *name, Value&& value, const char *file, int line) {
+        return VariableValueExpression<Value>(name, move(value), file, line);
+    }
 
     template<typename Arg>
     using IsExpression = enable_if_t<is_base_of<Expression, Arg>::value>*;
@@ -421,14 +476,13 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         return apply(">>", [](const auto&lhs, const auto& rhs) { return lhs >> rhs; }, lhs, rhs);
     }
 
-    template<typename Value>
-    auto makeVariable(const char *name, const Value &value, const char *file, int line) {
-        return VariableExpression<Value>(name, move(value), file, line);
-    }
-
-    template<typename FailureHandler, typename Expression, typename VariableValue, typename... ContextVariableList>
+    template<
+            typename FailureHandler,
+            typename Expression,
+            typename SubExpression,
+            typename... ContextVariableList>
     void ProcessFailureImpl(Expression expression, vector<Variable> variableList,
-                        VariableExpression<VariableValue> variableExpression,
+                        SubExpression variableExpression,
                         ContextVariableList... contextVariableList) {
         variableExpression.appendVariables(variableList);
         ProcessFailureImpl<FailureHandler>(move(expression), move(variableList), move(contextVariableList)...);
@@ -512,7 +566,6 @@ namespace Enhedron { namespace Assertion {
     using Impl::Configurable::IsExpression;
     using Impl::Configurable::Expression;
     using Impl::Configurable::Variable;
-    using Impl::Configurable::VariableExpression;
     using Impl::Configurable::ProcessFailure;
 }}
 

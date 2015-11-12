@@ -241,12 +241,12 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 IsExpression<Expression> = nullptr
         >
         Check(
-                string&& description,
-                Expression&& expression,
-                ContextVariableList&&... contextVariableList
+                string description,
+                Expression expression,
+                ContextVariableList... contextVariableList
         )
         {
-            operator()(forward<string>(description), forward<Expression>(expression), forward<ContextVariableList>(contextVariableList)...);
+            operator()(move(description), move<Expression>(expression), move<ContextVariableList>(contextVariableList)...);
         }
 
         template<
@@ -255,11 +255,11 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 IsExpression<Expression> = nullptr
         >
         Check(
-                Expression&& expression,
-                ContextVariableList&&... contextVariableList
+                Expression expression,
+                ContextVariableList... contextVariableList
         )
         {
-            operator()(forward<Expression>(expression), forward<ContextVariableList>(contextVariableList)...);
+            operator()(move<Expression>(expression), move<ContextVariableList>(contextVariableList)...);
         }
 
         template<
@@ -269,8 +269,8 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         >
         bool operator()(
                 string description,
-                Expression&& expression,
-                ContextVariableList&&... contextVariableList
+                Expression expression,
+                ContextVariableList... contextVariableList
         )
         {
             auto ok = CheckWithFailureHandler<LogFailureHandler<NullAction>>(
@@ -288,8 +288,8 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 IsExpression<Expression> = nullptr
         >
         bool operator()(
-                Expression&& expression,
-                ContextVariableList&&... contextVariableList
+                Expression expression,
+                ContextVariableList... contextVariableList
         )
         {
             auto description = expression.makeName();
@@ -330,8 +330,8 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             return ok;
         }
 
-        template<typename Value, typename... ContextVariableList>
-        void fail(VariableExpression<Value> expression, ContextVariableList... contextVariableList) {
+        template<typename Expression, typename... ContextVariableList>
+        void fail(Expression expression, ContextVariableList... contextVariableList) {
             statusList.push_back(Status {true, expression.evaluate()});
             ProcessFailure<FailureHandler>(move(expression), move(contextVariableList)...);
         }

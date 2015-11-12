@@ -65,6 +65,29 @@ namespace Enhedron {
                 move(contextVariableList)...);
     }
 
+    class MoveTracker final: public NoCopy {
+    public:
+        MoveTracker() = default;
+        MoveTracker(const MoveTracker&) = default;
+        MoveTracker& operator=(const MoveTracker&) = default;
+
+        MoveTracker(MoveTracker&& source) : moved_(source.moved_) {
+            source.moved_ = true;
+        }
+
+        MoveTracker& operator=(MoveTracker&& source) {
+            assert(this != &source);
+            moved_ = source.moved_;
+            source.moved_ = true;
+
+            return *this;
+        }
+
+        bool moved() const { return moved_; }
+    private:
+        bool moved_ = false;
+    };
+
     template<typename Expression>
     void expectSuccess(Check& check, Expression expression) {
         FailureHandler::reset();
@@ -187,6 +210,20 @@ namespace Enhedron {
                 expectFailure(check, M_EXPR(false), "false");
                 expectFailure(check, M_EXPR(false) || M_EXPR(false), "(false || false)");
                 expectFailure(check, M_EXPR(sum3)(1, 2, 3) == 7, "(sum3(1, 2, 3) == 7)");
+            }),
+            simple("ValueSemantics", [] (Check& check) {
+                MoveTracker moveTracker;
+
+                M_EXPR(moveTracker);
+                check("We don't steal the expression object", ! M_EXPR(moveTracker.moved()));
+
+                M_EXPR([] (const MoveTracker&) {}) (moveTracker);
+                check("We don't steal function arguments", ! M_EXPR(moveTracker.moved()));
+
+                // Need to run through sanitizers to check we don't store refs to temporaries
+                int a = 1;
+                int b = 1;
+                check("We don't store refs to temporaries", M_EXPR(a + b) == 2);
             }),
             simple("ThrowSucceeds", [] (Check& check) {
                 testAssertThrows<exception>(M_EXPR([] { throw runtime_error("test"); }));
