@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Enhedron/Util/MetaProgramming.h"
+
 #include <type_traits>
 #include <sstream>
 #include <string>
@@ -30,10 +32,10 @@ namespace Enhedron { namespace Assertion {
     };
 
     template<typename Value>
-    struct Convert<Value, typename std::enable_if<std::is_enum<Value>::value>::type> {
+    struct Convert<Value, std::enable_if_t<std::is_enum<std::remove_reference_t<Value>>::value>> {
         static std::string toString(Value value) {
             std::ostringstream valueString;
-            valueString << static_cast<typename std::underlying_type<Value>::type>(value);
+            valueString << static_cast<std::underlying_type_t<std::remove_reference_t<Value>>>(value);
 
             return valueString.str();
         }
@@ -42,8 +44,11 @@ namespace Enhedron { namespace Assertion {
 
 namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurable {
     using Util::StoreArgs;
+    using Util::mapTuple;
+    using Util::mapParameterPack;
+    using Util::extractParameterPack;
 
-    using std::enable_if;
+    using std::enable_if_t;
     using std::is_base_of;
     using std::is_same;
     using std::ostringstream;
@@ -188,23 +193,45 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
         string makeName() const {
             ostringstream valueString;
-            valueString << name << "(" << ")"; // TODO
+            valueString << name << "(";
+            extractParameterPack(
+                    [this, &valueString] (const Args&... unpackedArgs) {
+                        makeParameterNames(out(valueString), unpackedArgs...);
+                    },
+                    args
+            );
+            valueString << ")";
 
             return valueString.str();
         }
 
-        void appendVariables(vector<Variable> &variableList) const {
-            // TODO:
+        void appendVariables(vector<Variable>& variableList) const {
+            variableList.emplace_back(name, "function", file, line);
         }
 
         ResultType evaluate() const {
-            return evaluate(index_sequence_for<Args...>());
+            return extractParameterPack( [this] (const Args&... extractedArgs) {
+                    return functor(extractedArgs...);
+                },
+                args
+            );
         }
     private:
-        template<size_t... Indices>
-        ResultType evaluate(index_sequence<Indices...>) const {
-            return functor(get<Indices>(args)...);
+        template<typename Arg1, typename Arg2, typename... Tail>
+        void makeParameterNames(Out<ostringstream> parameters, const Arg1& arg1, const Arg2& arg2, const Tail&... tail) const {
+            (*parameters) << Convert<Arg1>::toString(arg1) << ", ";
+            makeParameterNames(parameters, arg2, tail...);
         }
+
+        template<typename Arg>
+        void makeParameterNames(Out<ostringstream> parameters, const Arg& arg) const {
+            (*parameters) << Convert<Arg>::toString(arg);
+        }
+
+        void makeParameterNames(Out<ostringstream> parameters) const {}
+
+        template<typename Head, typename... Tail>
+        void addParameterStrings() {}
 
         const char *name;
         Functor& functor;
@@ -214,11 +241,11 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     };
 
     template<typename Value>
-    class VariableExpression final : public Expression {
+    class VariableExpressionBase final : public Expression {
     public:
         using ResultType = decay_t<const Value>;
 
-        explicit VariableExpression(const char *variableName, const Value &value, const char *file, int line) :
+        explicit VariableExpressionBase(const char *variableName, Value value, const char *file, int line) :
                 variableName(variableName),
                 value(value),
                 file(file),
@@ -238,61 +265,28 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
         template<typename... Args>
         Function<Value, Args...> operator()(Args&&... args) {
-            return Function<Value, Args...>(variableName, value, file, line, forward<Args>(args)...);
+            return Function<Value, Args...>(variableName, (value), file, line, forward<Args>(args)...);
         }
 
     private:
         const char *variableName;
-        const Value& value;
+        Value value;
         const char *file;
         int line;
     };
 
-    template<typename Functor>
-    class ExceptionExpression final : public Expression {
-    public:
-        explicit ExceptionExpression(const char *expressionText, Functor expression, const char *file,
-                                int line) :
-                expressionText(expressionText),
-                expression(move(expression)),
-                file(file),
-                line(line) { }
-
-        string makeName() const {
-            return expressionText;
-        }
-
-        void appendVariables(vector<Variable> &variableList) const {
-            variableList.emplace_back(expressionText, what, file, line);
-        }
-
-        void evaluate() {
-            try {
-                expression();
-            }
-            catch (const exception& e) {
-                what = e.what();
-                throw;
-            }
-        }
-
-    private:
-        const char *expressionText;
-        Functor expression;
-        string what = "no exception";
-        const char *file;
-        int line;
-    };
+    template<typename Value>
+    using VariableExpression = VariableExpressionBase<const Value&>;
 
     template<typename Arg>
-    using IsExpression = typename enable_if<is_base_of<Expression, Arg>::value>::type *;
+    using IsExpression = enable_if_t<is_base_of<Expression, Arg>::value>*;
 
     template<typename Arg>
-    using IsNotExpression = typename enable_if<!is_base_of<Expression, Arg>::value>::type *;
+    using IsNotExpression = enable_if_t<!is_base_of<Expression, Arg>::value> *;
 
     template<typename Lhs, typename Rhs>
-    using EitherIsExpression = typename enable_if<
-            is_base_of<Expression, Lhs>::value || is_base_of<Expression, Rhs>::value>::type *;
+    using EitherIsExpression = enable_if_t<
+            is_base_of<Expression, Lhs>::value || is_base_of<Expression, Rhs>::value> *;
 
     template<typename Operation, typename Lhs, typename Rhs, pair<IsExpression<Lhs>, IsExpression<Rhs>> * = nullptr>
     auto apply(const char *operationName, Operation operation, const Lhs &lhs, const Rhs &rhs) {
@@ -432,11 +426,6 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         return VariableExpression<Value>(name, move(value), file, line);
     }
 
-    template<typename Functor>
-    auto makeException(const char *name, Functor functor, const char *file, int line) {
-        return ExceptionExpression<Functor>(name, move(functor), file, line);
-    }
-
     template<typename FailureHandler, typename Expression, typename VariableValue, typename... ContextVariableList>
     void ProcessFailureImpl(Expression expression, vector<Variable> variableList,
                         VariableExpression<VariableValue> variableExpression,
@@ -474,7 +463,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             typename Exception,
             typename Expression,
             typename... ContextVariableList,
-            typename enable_if<is_same<Exception, exception>::value>::type * = nullptr
+            enable_if_t<is_same<Exception, exception>::value> * = nullptr
     >
     bool CheckThrowsWithFailureHandler(Expression expression, ContextVariableList... contextVariableList) {
         try {
@@ -495,7 +484,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             typename Exception,
             typename Expression,
             typename... ContextVariableList,
-            typename enable_if<!is_same<Exception, exception>::value>::type * = nullptr
+            enable_if_t<!is_same<Exception, exception>::value> * = nullptr
     >
     bool CheckThrowsWithFailureHandler(Expression expression, ContextVariableList... contextVariableList) {
         try {
@@ -520,7 +509,6 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 namespace Enhedron { namespace Assertion {
     using Impl::Configurable::CheckWithFailureHandler;
     using Impl::Configurable::CheckThrowsWithFailureHandler;
-    using Impl::Configurable::ExceptionExpression;
     using Impl::Configurable::IsExpression;
     using Impl::Configurable::Expression;
     using Impl::Configurable::Variable;
@@ -530,9 +518,6 @@ namespace Enhedron { namespace Assertion {
 
 #define M_ENHEDRON_VAR(expression) \
     (::Enhedron::Assertion::Impl::Configurable::makeVariable((#expression), (expression), (__FILE__), (__LINE__)))
-
-#define M_ENHEDRON_VOID(expression) \
-    (::Enhedron::Assertion::Impl::Configurable::makeException((#expression), (expression), (__FILE__), (__LINE__)))
 
 #ifdef NDEBUG
 #define M_ENHEDRON_DEBUG(expression) \

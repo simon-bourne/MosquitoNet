@@ -197,7 +197,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     };
 
     struct NullAction final: public NoCopy {
-        static constexpr const char* name = "testFailed";
+        static constexpr const char* name = "Test";
         static void run() {}
     };
 
@@ -296,9 +296,14 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             return operator()(move(description), move(expression), move(contextVariableList)...); // TODO: forward
         }
 
-        template<typename Exception = exception, typename Functor, typename... ContextVariableList>
+        template<
+                typename Exception = exception,
+                typename Expression,
+                typename... ContextVariableList,
+                IsExpression<Expression> = nullptr
+        >
         bool throws(
-                ExceptionExpression<Functor> expression,
+                Expression expression,
                 ContextVariableList... contextVariableList
         )
         {
@@ -309,10 +314,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 );
         }
 
-        template<typename Exception = exception, typename Functor, typename... ContextVariableList>
+        template<typename Exception = exception, typename Expression, typename... ContextVariableList>
         bool throws(
                 string description,
-                ExceptionExpression<Functor> expression,
+                Expression expression,
                 ContextVariableList... contextVariableList
         )
         {

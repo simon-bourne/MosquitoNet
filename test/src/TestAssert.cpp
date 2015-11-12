@@ -181,26 +181,27 @@ namespace Enhedron {
                 expectSuccess(check, M_EXPR(true));
                 expectSuccess(check, ! M_EXPR(false));
                 expectSuccess(check, ! M_EXPR(false) && !M_EXPR(false));
-                check(M_EXPR(sum3)(1, 2, 3) == 6);
+                expectSuccess(check, M_EXPR(sum3)(1, 2, 3) == 6);
             }),
             simple("Failure", [] (Check& check) {
                 expectFailure(check, M_EXPR(false), "false");
                 expectFailure(check, M_EXPR(false) || M_EXPR(false), "(false || false)");
+                expectFailure(check, M_EXPR(sum3)(1, 2, 3) == 7, "(sum3(1, 2, 3) == 7)");
             }),
             simple("ThrowSucceeds", [] (Check& check) {
-                testAssertThrows<exception>(M_VOID([] { throw runtime_error("test"); }));
-                testAssertThrows<runtime_error>(M_VOID([] { throw runtime_error("test"); }));
+                testAssertThrows<exception>(M_EXPR([] { throw runtime_error("test"); }));
+                testAssertThrows<runtime_error>(M_EXPR([] { throw runtime_error("test"); }));
             }),
             simple("ThrowFails", [] (Check& check) {
                 expectException<logic_error>(
                         check,
-                        M_VOID([] { throw runtime_error("test"); }),
+                        M_EXPR([] { throw runtime_error("test"); }),
                         "[] { throw runtime_error(\"test\"); }"
                     );
 
                 expectException<runtime_error>(
                         check,
-                        M_VOID([] {} ),
+                        M_EXPR([] {} ),
                         "[] {}"
                 );
 

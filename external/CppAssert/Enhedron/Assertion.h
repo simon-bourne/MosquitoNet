@@ -30,6 +30,5 @@ namespace Enhedron {
 }
 
 #define M_EXPR M_ENHEDRON_VAR
-#define M_VOID M_ENHEDRON_VOID
 #define M_DEBUG M_ENHEDRON_DEBUG
 #define M_DEBUG_EXTRA M_ENHEDRON_DEBUG_EXTRA

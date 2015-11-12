@@ -2,21 +2,15 @@
 
 [![Build Status](https://travis-ci.org/simon-bourne/CppUnitTest.png)](https://travis-ci.org/simon-bourne/CppUnitTest)
 
-## This project is still in it's infancy!
- 
-I'm using it and it's working well for me, but if there's something you don't like or want, please log an issue or reply
-with +1 to an existing issue.
-
 ## Features
 
-- Exhaustive tests. You specify what values each parameter can have and your test will be run for every possible 
-combination of these values.      
-
+- Exhaustively test every combination of parameters for a test. 
+- Extensible assertions.
+- Minimal use of macros. You'll only need `M_EXPR`, and that's not even doing anything clever.
 - Nested contexts.
-
-- Tests will run through all checks and report all errors.
-
-- Minimal use of macros. They're are all prefixed with M_ so you know if you're in C++ land or crazy macro land.
+- Simple or BDD style tests.
+- Tests will run through all checks and report all errors so you see everything that failed in a test, not just the
+first thing.
 
 ## Motivating Examples
 
@@ -55,12 +49,55 @@ static Test::Unit u(context("Util",
 Some things to note:
 
 - `choice` simply returns a `vector<decltype(firstArgument)>`. We could have used anything that works in a range based
-for loop. Perhaps a `boost::irange` or a container that generates `N` random numbers, or even a constant.
+`for` loop. Perhaps a `boost::irange` or a container that generates `N` random numbers, or even a constant.
 - `static Test::Unit u(...)` creates a context to which we can add many unit tests or sub-contexts.
 - `context("Util", ...)` creates a nested context. There's no limit on the depth of nesting.
 - `M_EXPR` is the only macro used here. All it does is add file and line information to a C++ function call.
 
-That's cool, but I really just want a quick and simple test.
+Can I customize assertions?
+
+Yes. There's not really anything you need to do. For example, if you wrote this function:
+
+```C++
+int sum3(int x, int y, int z) {
+    return x + y + z;
+}
+```
+
+You can automatically use it in assertions:
+
+```C++
+int a = 1;
+int b = 2;
+int c = 3;
+check(M_EXPR(sum3)(a, b, c) == 6); // This will pass.
+check(M_EXPR(sum3)(a, b, c) == 7); // This will fail with the message:
+    // Test failed: (sum3(1, 2, 3) == 7)
+    //    sum3 == function: in file /path/to/file.cpp, line 5
+```
+
+You can also have more complex expressions and add context expressions to give more detail on the output:
+
+```C++
+int a = 1;
+int b = 2;
+int c = 3;
+int contextVariable1 = 10;
+const char* contextVariable2 = "Looks like something went wrong!";
+check(M_EXPR(sum3)(a, b, c) == 7 && a == b, M_EXPR(contextVariable1), M_EXPR(contextVariable2));
+```
+
+will fail with the message:
+```
+Test failed: ((sum3(1, 2, 3) == 7) && (a == b))
+    sum3 == function: in file /path/to/file.cpp, line 195
+    a == 1: in file /path/to/file.cpp, line 195
+    b == 2: in file /path/to/file.cpp, line 195
+    context1 == 10: in file /path/to/file.cpp, line 195
+    context2 == Looks like something went wrong!: in file /path/to/file.cpp, line 195
+```
+
+That's all very cool, but I really just want a quick and simple test.
 
 No problem:
 
@@ -125,8 +162,7 @@ Take a look at the tests for [Util](test/src/TestUtil.cpp) or [Container](test/s
 
 I like the sound of this so far. What output formats do you support?
 
-Ahem, you know when I said this project was in it's infancy? Well that's one of the things that currently sucks. It
-just logs the output in json format which is not very readable.
+Ahem, that's one of the things that currently sucks. It just logs the output in json format which is not very readable.
 
 Some other stuff that really needs fixing:
 
