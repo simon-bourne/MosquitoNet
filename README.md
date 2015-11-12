@@ -73,7 +73,7 @@ int c = 3;
 check(M_EXPR(sum3)(a, b, c) == 6); // This will pass.
 check(M_EXPR(sum3)(a, b, c) == 7); // This will fail with the message:
     // Test failed: (sum3(1, 2, 3) == 7)
-    //    sum3 == function: in file /path/to/file.cpp, line 5
+    //    sum3 = function: in file /path/to/file.cpp, line 5
 ```
 
 You can also have more complex expressions and add context expressions to give more detail on the output:
@@ -90,11 +90,11 @@ check(M_EXPR(sum3)(a, b, c) == 7 && M_EXPR(a) == M_EXPR(b), M_EXPR(contextVariab
 will fail with the message:
 ```
 Test failed: ((sum3(1, 2, 3) == 7) && (a == b))
-    sum3 == function: in file /path/to/file.cpp, line 195
-    a == 1: in file /path/to/file.cpp, line 195
-    b == 2: in file /path/to/file.cpp, line 195
-    context1 == 10: in file /path/to/file.cpp, line 195
-    context2 == Looks like something went wrong!: in file /path/to/file.cpp, line 195
+    sum3 = function: in file /path/to/file.cpp, line 195
+    a = 1: in file /path/to/file.cpp, line 195
+    b = 2: in file /path/to/file.cpp, line 195
+    context1 = 10: in file /path/to/file.cpp, line 195
+    context2 = Looks like something went wrong!: in file /path/to/file.cpp, line 195
 ```
 
 That's all very cool, but I really just want a quick and simple test.

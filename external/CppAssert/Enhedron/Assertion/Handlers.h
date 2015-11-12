@@ -47,7 +47,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Handlers {
                 for (const auto &variable : variableList) {
                     log.error("variable", "name", variable.name(), "value", variable.value(), "file",
                               variable.file(), "line", variable.line());
-                    cerr << "    " << variable.name() << " == " << variable.value() <<
+                    cerr << "    " << variable.name() << " = " << variable.value() <<
                             ": in file " << variable.file() << ", line " << variable.line() << "\n";
                 }
 
