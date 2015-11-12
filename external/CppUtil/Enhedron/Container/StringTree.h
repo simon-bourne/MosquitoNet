@@ -10,14 +10,14 @@
 #include <utility>
 
 #include <boost/optional/optional.hpp>
-#include <boost/variant/recursive_wrapper.hpp>
 
 namespace Enhedron { namespace Container { namespace Impl { namespace StringTree {
     using std::map;
     using std::string;
     using std::move;
+    using std::unique_ptr;
+    using std::make_unique;
 
-    using boost::recursive_wrapper;
     using boost::optional;
     using boost::none;
 
@@ -28,7 +28,7 @@ namespace Enhedron { namespace Container { namespace Impl { namespace StringTree
         }
 
         Out<StringTree> set(string key, StringTree stringTree) {
-            return out(children.emplace(move(key), recursive_wrapper<StringTree>(move(stringTree))).first->second.get());
+            return out(*children.emplace(move(key), make_unique<StringTree>(move(stringTree))).first->second);
         }
 
         optional<Out<StringTree>> get(const string& key) {
@@ -38,7 +38,7 @@ namespace Enhedron { namespace Container { namespace Impl { namespace StringTree
                 return none;
             }
 
-            return out(childIter->second.get());
+            return out(*childIter->second);
         }
 
         optional<const StringTree&> get(const string& key) const {
@@ -48,7 +48,7 @@ namespace Enhedron { namespace Container { namespace Impl { namespace StringTree
                 return none;
             }
 
-            return childIter->second.get();
+            return *childIter->second;
         }
 
         void clear() {
@@ -63,7 +63,7 @@ namespace Enhedron { namespace Container { namespace Impl { namespace StringTree
             return children.empty();
         }
     private:
-        using KeyToChildren = map<string, recursive_wrapper<StringTree>>;
+        using KeyToChildren = map<string, unique_ptr<StringTree>>;
         KeyToChildren children;
     };
 }}}}

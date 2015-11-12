@@ -293,7 +293,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         )
         {
             auto description = expression.makeName();
-            return operator()(move(description), move(expression), move(contextVariableList)...); // TODO: forward
+            return operator()(move(description), move(expression), move(contextVariableList)...);
         }
 
         template<

@@ -67,6 +67,10 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     using std::index_sequence;
     using std::index_sequence_for;
     using std::get;
+    using std::reference_wrapper;
+    using std::ref;
+    using std::cref;
+    using std::is_function;
 
     class Expression {
     };
@@ -185,7 +189,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
         explicit Function(const char *name, Functor&& functor, const char *file, int line, Args&&... args) :
                 name(name),
-                functor(move(functor)), // TODO: Thoroughly understand when using references.
+                functor(move(functor)),
                 file(file),
                 line(line),
                 args(forward<Args>(args)...)
@@ -234,7 +238,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         void addParameterStrings() {}
 
         const char *name;
-        Functor functor; // TODO: Fix so this works with functors and function pointers.
+        Functor functor;
         const char* file;
         int line;
         tuple<Args...> args;
@@ -265,8 +269,8 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
         template<typename... Args>
         auto operator()(Args&&... args) {
-            return Function<std::reference_wrapper<Value>, Args...>(
-                    variableName, std::cref(value), file, line, forward<Args>(args)...
+            return Function<reference_wrapper<Value>, Args...>(
+                    variableName, cref(value), file, line, forward<Args>(args)...
                 );
         }
 
@@ -323,12 +327,12 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         return VariableRefExpression<Value>(name, value, file, line);
     }
 
-    template<typename Value, enable_if_t<std::is_function<Value>::value>* = nullptr>
+    template<typename Value, enable_if_t<is_function<Value>::value>* = nullptr>
     auto makeVariable(const char *name, Value&& value, const char *file, int line) {
-        return VariableValueExpression<std::reference_wrapper<Value>>(name, std::ref(value), file, line);
+        return VariableValueExpression<reference_wrapper<Value>>(name, ref(value), file, line);
     }
 
-    template<typename Value, enable_if_t< ! std::is_function<Value>::value>* = nullptr>
+    template<typename Value, enable_if_t< ! is_function<Value>::value>* = nullptr>
     auto makeVariable(const char *name, Value&& value, const char *file, int line) {
         return VariableValueExpression<Value>(name, move(value), file, line);
     }

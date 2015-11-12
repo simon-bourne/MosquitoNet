@@ -23,6 +23,7 @@ namespace Enhedron {
     using std::runtime_error;
     using std::logical_and;
     using std::logic_error;
+    using std::is_same;
 
     using boost::optional;
 
@@ -224,6 +225,18 @@ namespace Enhedron {
                 int a = 1;
                 int b = 1;
                 check("We don't store refs to temporaries", M_EXPR(a + b) == 2);
+
+                namespace Conf = Assertion::Impl::Configurable;
+
+                static_assert(
+                        is_same<decltype(M_EXPR(a + b)), Conf::VariableValueExpression<int>>::value,
+                        "Temporaries are stored by value"
+                    );
+
+                static_assert(
+                        is_same<decltype(M_EXPR(a)), Conf::VariableRefExpression<int>>::value,
+                        "Variables are stored by reference"
+                );
             }),
             simple("ThrowSucceeds", [] (Check& check) {
                 testAssertThrows<exception>(M_EXPR([] { throw runtime_error("test"); }));

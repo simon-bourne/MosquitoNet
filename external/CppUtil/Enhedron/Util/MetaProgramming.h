@@ -48,7 +48,6 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
     class StoreArgs final: public NoCopy {
         tuple<remove_reference_t<Args>...> args;
 
-        // TODO: Use extractParameterPack instead.
         template <typename Functor, size_t... indices, typename... ExtraArgs>
         void applyExtraBeforeImpl(Functor&& functor, index_sequence<indices...>, ExtraArgs&&... extraArgs) {
             functor(forward<ExtraArgs>(extraArgs)..., forward<Args>(get<indices>(args))...);
@@ -59,7 +58,6 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
             functor(forward<Args>(get<indices>(args))..., forward<ExtraArgs>(extraArgs)...);
         }
     public:
-        // TODO: Think this is true. Needs unit testing.
         // RValue reference arguments will be moved into this container. Everything else will be copied.
         StoreArgs(Args&&... args) : args(forward<Args>(args)...) { }
 
