@@ -73,12 +73,8 @@ namespace Enhedron {
         }
     };
 
-    static Test::Unit u(
-        context("Container",
-            context("StringTree",
-                    gwt<SetSingleOnEmpty>("SetSingleOnEmpty"),
-                    gwt<SetPathOnEmpty>("SetPathOnEmpty")
-            )
-        )
-    );
+    static Test::Suite s("Container", context("StringTree",
+        gwt<SetSingleOnEmpty>("Set a single element on an empty StringTree"),
+        gwt<SetPathOnEmpty>("Set a whole path on an empty StringTree")
+    ));
 }

@@ -17,7 +17,7 @@ namespace Enhedron {
         LAST_ENUM_VALUE = SimpleEnum::VALUE_1
     };
 
-    static Test::Unit u(context("Util",
+    static Test::Suite u("Util",
         simple("out", [] (Check& check) {
             int value = 10;
             auto outParam(out(value));
@@ -97,5 +97,5 @@ namespace Enhedron {
                 check(VAL(makeDivisibleByRoundingUp(10u, 5u)) == 10u);
             })
         )
-    ));
+    );
 }

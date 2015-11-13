@@ -202,111 +202,109 @@ namespace Enhedron {
 
     int id(int x) { return x; }
 
-    Test::Unit u(
-        context("Assert",
-            simple("Success", [] (Check& check) {
-                expectSuccess(check, VAL(true));
-                expectSuccess(check, ! VAL(false));
-                expectSuccess(check, ! VAL(false) && !VAL(false));
-                expectSuccess(check, VAL(sum3)(1, 2, 3) == 6);
-            }),
-            simple("Failure", [] (Check& check) {
-                expectFailure(check, VAL(false), "false");
-                expectFailure(check, VAL(false) || VAL(false), "(false || false)");
-                expectFailure(check, VAL(sum3)(1, 2, 3) == 7, "(sum3(1, 2, 3) == 7)");
-            }),
-            simple("ValueSemantics", [] (Check& check) {
-                MoveTracker moveTracker;
+    static Test::Suite s("Assert",
+        simple("Success", [] (Check& check) {
+            expectSuccess(check, VAL(true));
+            expectSuccess(check, ! VAL(false));
+            expectSuccess(check, ! VAL(false) && !VAL(false));
+            expectSuccess(check, VAL(sum3)(1, 2, 3) == 6);
+        }),
+        simple("Failure", [] (Check& check) {
+            expectFailure(check, VAL(false), "false");
+            expectFailure(check, VAL(false) || VAL(false), "(false || false)");
+            expectFailure(check, VAL(sum3)(1, 2, 3) == 7, "(sum3(1, 2, 3) == 7)");
+        }),
+        simple("ValueSemantics", [] (Check& check) {
+            MoveTracker moveTracker;
 
-                VAL(moveTracker);
-                check("We don't steal the expression object", ! VAL(moveTracker.moved()));
+            VAL(moveTracker);
+            check("We don't steal the expression object", ! VAL(moveTracker.moved()));
 
-                VAL([] (const MoveTracker&) {}) (moveTracker);
-                check("We don't steal function arguments", ! VAL(moveTracker.moved()));
+            VAL([] (const MoveTracker&) {}) (moveTracker);
+            check("We don't steal function arguments", ! VAL(moveTracker.moved()));
 
-                // Need to run through sanitizers to check we don't store refs to temporaries
-                int a = 1;
-                int b = 1;
-                check("We don't store refs to temporaries", VAL(a + b) == 2);
+            // Need to run through sanitizers to check we don't store refs to temporaries
+            int a = 1;
+            int b = 1;
+            check("We don't store refs to temporaries", VAL(a + b) == 2);
 
-                namespace Conf = Assertion::Impl::Configurable;
+            namespace Conf = Assertion::Impl::Configurable;
 
-                static_assert(
-                        is_same<decltype(VAL(a + b)), Conf::VariableValueExpression<int>>::value,
-                        "Temporaries are stored by value"
-                    );
-
-                static_assert(
-                        is_same<decltype(VAL(a)), Conf::VariableRefExpression<int>>::value,
-                        "Variables are stored by reference"
-                );
-
-                const auto aConst = a;
-
-                static_assert(
-                        is_same<decltype(VAL(aConst)), Conf::VariableRefExpression<const int>>::value,
-                        "const is preserved"
-                );
-
-                static_assert(
-                    is_same<
-                        decltype(VAL(id)(a + b)),
-                        Conf::Function<reference_wrapper<int(int)>, int>
-                    >::value,
+            static_assert(
+                    is_same<decltype(VAL(a + b)), Conf::VariableValueExpression<int>>::value,
                     "Temporaries are stored by value"
                 );
 
-                static_assert(
-                    is_same<
-                        decltype(VAL(id)(a)),
-                        Conf::Function<reference_wrapper<int(int)>, int&>
-                    >::value,
-                    "Values are stored by reference"
+            static_assert(
+                    is_same<decltype(VAL(a)), Conf::VariableRefExpression<int>>::value,
+                    "Variables are stored by reference"
+            );
+
+            const auto aConst = a;
+
+            static_assert(
+                    is_same<decltype(VAL(aConst)), Conf::VariableRefExpression<const int>>::value,
+                    "const is preserved"
+            );
+
+            static_assert(
+                is_same<
+                    decltype(VAL(id)(a + b)),
+                    Conf::Function<reference_wrapper<int(int)>, int>
+                >::value,
+                "Temporaries are stored by value"
+            );
+
+            static_assert(
+                is_same<
+                    decltype(VAL(id)(a)),
+                    Conf::Function<reference_wrapper<int(int)>, int&>
+                >::value,
+                "Values are stored by reference"
+            );
+        }),
+        simple("ThrowSucceeds", [] (Check& check) {
+            testAssertThrows<exception>(VAL([] { throw runtime_error("test"); }));
+            testAssertThrows<runtime_error>(VAL([] { throw runtime_error("test"); }));
+        }),
+        simple("ThrowFails", [] (Check& check) {
+            expectException<logic_error>(
+                    check,
+                    VAL([] { throw runtime_error("test"); }),
+                    "[] { throw runtime_error(\"test\"); }"
                 );
-            }),
-            simple("ThrowSucceeds", [] (Check& check) {
-                testAssertThrows<exception>(VAL([] { throw runtime_error("test"); }));
-                testAssertThrows<runtime_error>(VAL([] { throw runtime_error("test"); }));
-            }),
-            simple("ThrowFails", [] (Check& check) {
-                expectException<logic_error>(
-                        check,
-                        VAL([] { throw runtime_error("test"); }),
-                        "[] { throw runtime_error(\"test\"); }"
-                    );
 
-                expectException<runtime_error>(
-                        check,
-                        VAL([] {} ),
-                        "[] {}"
-                );
+            expectException<runtime_error>(
+                    check,
+                    VAL([] {} ),
+                    "[] {}"
+            );
 
-            }),
-            simple("BinaryBoolean", [] (Check& check) {
-                testBooleanOperator<std::logical_and<void>>(check);
-                testBooleanOperator<std::logical_or<void>>(check);
-            }),
-            simple("Comparison", [] (Check& check) {
-                testNumericOperator<std::equal_to<void>>(check);
-                testNumericOperator<std::not_equal_to<void>>(check);
-                testNumericOperator<std::less<void>>(check);
-                testNumericOperator<std::less_equal<void>>(check);
-                testNumericOperator<std::greater<void>>(check);
-                testNumericOperator<std::greater_equal<void>>(check);
-            }),
-            simple("Arithmetic", [] (Check& check) {
-                testNumericOperator<std::plus<void>>(check);
-                testNumericOperator<std::minus<void>>(check);
-                testNumericOperator<std::multiplies<void>>(check);
+        }),
+        simple("BinaryBoolean", [] (Check& check) {
+            testBooleanOperator<std::logical_and<void>>(check);
+            testBooleanOperator<std::logical_or<void>>(check);
+        }),
+        simple("Comparison", [] (Check& check) {
+            testNumericOperator<std::equal_to<void>>(check);
+            testNumericOperator<std::not_equal_to<void>>(check);
+            testNumericOperator<std::less<void>>(check);
+            testNumericOperator<std::less_equal<void>>(check);
+            testNumericOperator<std::greater<void>>(check);
+            testNumericOperator<std::greater_equal<void>>(check);
+        }),
+        simple("Arithmetic", [] (Check& check) {
+            testNumericOperator<std::plus<void>>(check);
+            testNumericOperator<std::minus<void>>(check);
+            testNumericOperator<std::multiplies<void>>(check);
 
-                testNonZeroDenominator<std::modulus<void>>(check);
-                testNonZeroDenominator<std::divides<void>>(check);
-            }),
-            simple("Bitwise", [] (Check& check) {
-                testNumericOperator<std::bit_and<void>>(check);
-                testNumericOperator<std::bit_or<void>>(check);
-                testNumericOperator<std::bit_xor<void>>(check);
-            })
-        )
+            testNonZeroDenominator<std::modulus<void>>(check);
+            testNonZeroDenominator<std::divides<void>>(check);
+        }),
+        simple("Bitwise", [] (Check& check) {
+            testNumericOperator<std::bit_and<void>>(check);
+            testNumericOperator<std::bit_or<void>>(check);
+            testNumericOperator<std::bit_xor<void>>(check);
+        })
     );
 }

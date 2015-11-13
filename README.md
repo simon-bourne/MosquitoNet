@@ -7,7 +7,7 @@
 - Exhaustively test every combination of parameters for a test. 
 - Extensible assertions.
 - `VAL` is the only macro you'll need, and that's just adding file and line info to a function. If the name clashes,
-`#undef` it and `#define MY_VAR M_ENHEDRON_VAL`.
+`#undef` it and `#define MY_VAL M_ENHEDRON_VAL`.
 - Nested contexts.
 - Simple or BDD style tests.
 - Tests will run through all checks and report all errors so you see everything that failed in a test, not just the
@@ -27,7 +27,7 @@ static Test::Unit u(context("Util",
             choice("", "prefix"),
             choice("", "postfix")
         ).
-        simple("jsonEscapingCombo", [] (
+        simple("Escaping JSON strings", [] (
                 Check& check,
                 char c, const string& prefix, const string& postfix
             )
@@ -54,7 +54,7 @@ Some things to note:
 - `static Test::Unit u(...)` creates a context to which we can add many unit tests or sub-contexts.
 - `context("Util", ...)` creates a nested context. There's no limit on the depth of nesting.
 
-Can I customize assertions?
+Can I customize checks?
 
 Yes. There's not really anything you need to do. For example, if you wrote this function:
 
@@ -101,6 +101,12 @@ Test failed: ((sum3(1, 2, 3) == 7) && (a == b))
     context2 = Looks like something went wrong!: in file /path/to/file.cpp, line 197
 ```
 
+Checks can also have descriptions:
+
+```C++
+check("a is 10", VAL(a) == 10);
+```
+
 That's all very cool, but I really just want a quick and simple test.
 
 No problem:
@@ -114,12 +120,13 @@ simple("jsonEscape", [] (Check& check) {
 })
 ```
 
-What about BDD?
+What about BDD? It avoids almost aspect oriented DSL's of other testing frameworks, and sticks to a familiar C++ style.
+This does cost a bit of boiler plate, but allows you to compose tests with standard C++ paradigms and makes control flow
+clear.
 
 ```C++
-    class BDDTest final: public Test::GWT {
-    public:
-        BDDTest() : Test::GWT(
+    struct BDDTest : GWT {
+        BDDTest() : GWT(
             Given("some starting point"),
             When("we do something"),
             Then("we can verify the result")
@@ -137,9 +144,7 @@ What about BDD?
     };
 
     static Test::Unit u(
-        context("SomeTest",
-            gwt<BDDTest>("BDDTest")
-        )
+        gwt<BDDTest>("A bdd test")
     );
 ```
 
@@ -148,12 +153,26 @@ And if I want to parameterize my test?
 Easy.
 
 ```C++
-    void someSimpleFunction(Check& check, int number, int anotherNumber);
+    class BDDTest final: GWT {
+        int x_;
+        int y_;
+    public:
+        BDDTest(int x, int y) : GWT(
+            Given("some starting point"),
+            When("we do something"),
+            Then("we can verify the result")
+        ) : x_(x), y_(y) {}
+    
+        void when() {}
+        void then() { check(VAL(x) == VAL(y)); }
+    };
+
+    void simpleTest(Check& check, int number, int anotherNumber);
     
     static Test::Unit u(
         context("SomeTest",
-            gwt<BDDTest>("BDDTest", someContructorArgument),
-            simple("simpleTest", someSimpleFunction, 1, 2)
+            gwt<BDDTest>("A BDD test", 1, 1),
+            simple("A simple test", simpleTest, 1, 2)
         )
     );
 ```
