@@ -23,31 +23,31 @@ namespace Enhedron {
             auto outParam(out(value));
             *outParam *= 2;
 
-            check(M_EXPR(value) == 20);
-            check(M_EXPR(*outParam) == value);
-            check(M_EXPR(outParam.get()) == value);
+            check(VAR(value) == 20);
+            check(VAR(*outParam) == value);
+            check(VAR(outParam.get()) == value);
         }),
         simple("taggedValue", [] (Check& check) {
             TaggedValue<SimpleEnum, SimpleEnum::VALUE_0, string> value(helloWorld);
 
-            check(M_EXPR(*value) == helloWorld);
-            check(M_EXPR(value->size()) == string(helloWorld).size());
+            check(VAR(*value) == helloWorld);
+            check(VAR(value->size()) == string(helloWorld).size());
 
             *value += "!";
 
-            check(M_EXPR(value->size()) == string(helloWorld).size() + 1);
+            check(VAR(value->size()) == string(helloWorld).size() + 1);
         }),
         simple("toEnum", [] (Check& check) {
-            check(M_EXPR(toEnum<SimpleEnum>(0)) == SimpleEnum::VALUE_0);
-            check(M_EXPR(toEnum<SimpleEnum>(1)) == SimpleEnum::VALUE_1);
-            check.throws(M_EXPR([] { toEnum<SimpleEnum>(-1); } ) ());
-            check.throws(M_EXPR([] { toEnum<SimpleEnum>(2); } ) ());
+            check(VAR(toEnum<SimpleEnum>(0)) == SimpleEnum::VALUE_0);
+            check(VAR(toEnum<SimpleEnum>(1)) == SimpleEnum::VALUE_1);
+            check.throws(VAR([] { toEnum<SimpleEnum>(-1); } ) ());
+            check.throws(VAR([] { toEnum<SimpleEnum>(2); } ) ());
         }),
         simple("jsonEscape", [] (Check& check) {
-            check(M_EXPR(jsonEscape("")) == "");
-            check(M_EXPR(jsonEscape(helloWorld)) == helloWorld);
-            check(M_EXPR(jsonEscape("prefix\u0001postfix")) == "prefix\\u0001postfix");
-            check(M_EXPR(jsonEscape("prefix\u0010postfix")) == "prefix\\u0010postfix");
+            check(VAR(jsonEscape("")) == "");
+            check(VAR(jsonEscape)(helloWorld) == VAR(helloWorld));
+            check(VAR(jsonEscape("prefix\u0001postfix")) == "prefix\\u0001postfix");
+            check(VAR(jsonEscape("prefix\u0010postfix")) == "prefix\\u0010postfix");
         }),
         exhaustive(
                 choice('\"', '\\', '\b', '\f', '\n', '\r', '\t'),
@@ -64,37 +64,37 @@ namespace Enhedron {
                 result += c;
                 result += postfix;
 
-                check(M_EXPR(jsonEscape(input)) == result);
+                check(VAR(jsonEscape(input)) == result);
             }
         ),
         context("math",
             simple("divideRoundingUp", [] (Check& check) {
-                check(M_EXPR(divideRoundingUp(0u, 10u)) == 0u);
-                check(M_EXPR(divideRoundingUp(1u, 10u)) == 1u);
-                check(M_EXPR(divideRoundingUp(10u, 10u)) == 1u);
-                check(M_EXPR(divideRoundingUp(11u, 10u)) == 2u);
+                check(VAR(divideRoundingUp(0u, 10u)) == 0u);
+                check(VAR(divideRoundingUp(1u, 10u)) == 1u);
+                check(VAR(divideRoundingUp(10u, 10u)) == 1u);
+                check(VAR(divideRoundingUp(11u, 10u)) == 2u);
             }),
             simple("makeDivisibleByRoundingDown", [] (Check& check) {
                 for (auto i = 1u; i < 10u; ++i) {
-                    check(M_EXPR(makeDivisibleByRoundingDown(0u, i)) == 0u);
+                    check(VAR(makeDivisibleByRoundingDown(0u, i)) == 0u);
                 }
 
-                check(M_EXPR(makeDivisibleByRoundingDown(10u, 1u)) == 10u);
-                check(M_EXPR(makeDivisibleByRoundingDown(10u, 2u)) == 10u);
-                check(M_EXPR(makeDivisibleByRoundingDown(10u, 3u)) == 9u);
-                check(M_EXPR(makeDivisibleByRoundingDown(10u, 4u)) == 8u);
-                check(M_EXPR(makeDivisibleByRoundingDown(10u, 5u)) == 10u);
+                check(VAR(makeDivisibleByRoundingDown(10u, 1u)) == 10u);
+                check(VAR(makeDivisibleByRoundingDown(10u, 2u)) == 10u);
+                check(VAR(makeDivisibleByRoundingDown(10u, 3u)) == 9u);
+                check(VAR(makeDivisibleByRoundingDown(10u, 4u)) == 8u);
+                check(VAR(makeDivisibleByRoundingDown(10u, 5u)) == 10u);
             }),
             simple("makeDivisibleByRoundingUp", [] (Check& check) {
                 for (auto i = 1u; i < 10u; ++i) {
-                    check(M_EXPR(makeDivisibleByRoundingUp(0u, i)) == 0u);
+                    check(VAR(makeDivisibleByRoundingUp(0u, i)) == 0u);
                 }
 
-                check(M_EXPR(makeDivisibleByRoundingUp(10u, 1u)) == 10u);
-                check(M_EXPR(makeDivisibleByRoundingUp(10u, 2u)) == 10u);
-                check(M_EXPR(makeDivisibleByRoundingUp(10u, 3u)) == 12u);
-                check(M_EXPR(makeDivisibleByRoundingUp(10u, 4u)) == 12u);
-                check(M_EXPR(makeDivisibleByRoundingUp(10u, 5u)) == 10u);
+                check(VAR(makeDivisibleByRoundingUp(10u, 1u)) == 10u);
+                check(VAR(makeDivisibleByRoundingUp(10u, 2u)) == 10u);
+                check(VAR(makeDivisibleByRoundingUp(10u, 3u)) == 12u);
+                check(VAR(makeDivisibleByRoundingUp(10u, 4u)) == 12u);
+                check(VAR(makeDivisibleByRoundingUp(10u, 5u)) == 10u);
             })
         )
     ));

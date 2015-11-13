@@ -24,6 +24,7 @@ namespace Enhedron {
     using std::logical_and;
     using std::logic_error;
     using std::is_same;
+    using std::reference_wrapper;
 
     using boost::optional;
 
@@ -96,10 +97,10 @@ namespace Enhedron {
         try {
             testAssert(move(expression));
 
-            check( ! M_EXPR(bool(FailureHandler::failure())));
+            check( ! VAR(bool(FailureHandler::failure())));
         }
         catch (const exception& e){
-            check.fail(M_EXPR(e.what()));
+            check.fail(VAR(e.what()));
         }
     }
 
@@ -111,12 +112,12 @@ namespace Enhedron {
             testAssert(move(expression));
             auto& failure = FailureHandler::failure();
 
-            if (check(M_EXPR(bool(failure))) && expressionText) {
-                check(M_EXPR(failure->expressionText) == expressionText);
+            if (check(VAR(bool(failure))) && expressionText) {
+                check(VAR(failure->expressionText) == expressionText);
             }
         }
         catch (const exception& e){
-            check.fail(M_EXPR(e.what()));
+            check.fail(VAR(e.what()));
         }
     }
 
@@ -126,14 +127,14 @@ namespace Enhedron {
         bool result = op(lhs, rhs);
 
         if (result) {
-            expectSuccess(check, op(M_EXPR(lhs), M_EXPR(rhs)));
-            expectSuccess(check, op(lhs, M_EXPR(rhs)));
-            expectSuccess(check, op(M_EXPR(lhs), rhs));
+            expectSuccess(check, op(VAR(lhs), VAR(rhs)));
+            expectSuccess(check, op(lhs, VAR(rhs)));
+            expectSuccess(check, op(VAR(lhs), rhs));
         }
         else {
-            expectFailure(check, op(M_EXPR(lhs), M_EXPR(rhs)));
-            expectFailure(check, op(lhs, M_EXPR(rhs)));
-            expectFailure(check, op(M_EXPR(lhs), rhs));
+            expectFailure(check, op(VAR(lhs), VAR(rhs)));
+            expectFailure(check, op(lhs, VAR(rhs)));
+            expectFailure(check, op(VAR(lhs), rhs));
         }
     }
 
@@ -150,9 +151,9 @@ namespace Enhedron {
         Operator op;
         auto result = op(lhs, rhs);
 
-        expectSuccess(check, op(M_EXPR(lhs), M_EXPR(rhs)) == result);
-        expectSuccess(check, op(lhs, M_EXPR(rhs)) == result);
-        expectSuccess(check, op(M_EXPR(lhs), rhs) == result);
+        expectSuccess(check, op(VAR(lhs), VAR(rhs)) == result);
+        expectSuccess(check, op(lhs, VAR(rhs)) == result);
+        expectSuccess(check, op(VAR(lhs), rhs) == result);
     }
 
     template<typename Operator>
@@ -186,12 +187,12 @@ namespace Enhedron {
 
             auto& failure = FailureHandler::failure();
 
-            if (check(M_EXPR(bool(failure))) && expressionText) {
-                check(M_EXPR(failure->expressionText) == expressionText);
+            if (check(VAR(bool(failure))) && expressionText) {
+                check(VAR(failure->expressionText) == expressionText);
             }
         }
         catch (const exception& e) {
-            check.fail(M_EXPR(e.what()));
+            check.fail(VAR(e.what()));
         }
     }
 
@@ -199,59 +200,84 @@ namespace Enhedron {
         return x + y + z;
     }
 
+    int id(int x) { return x; }
+
     Test::Unit u(
         context("Assert",
             simple("Success", [] (Check& check) {
-                expectSuccess(check, M_EXPR(true));
-                expectSuccess(check, ! M_EXPR(false));
-                expectSuccess(check, ! M_EXPR(false) && !M_EXPR(false));
-                expectSuccess(check, M_EXPR(sum3)(1, 2, 3) == 6);
+                expectSuccess(check, VAR(true));
+                expectSuccess(check, ! VAR(false));
+                expectSuccess(check, ! VAR(false) && !VAR(false));
+                expectSuccess(check, VAR(sum3)(1, 2, 3) == 6);
             }),
             simple("Failure", [] (Check& check) {
-                expectFailure(check, M_EXPR(false), "false");
-                expectFailure(check, M_EXPR(false) || M_EXPR(false), "(false || false)");
-                expectFailure(check, M_EXPR(sum3)(1, 2, 3) == 7, "(sum3(1, 2, 3) == 7)");
+                expectFailure(check, VAR(false), "false");
+                expectFailure(check, VAR(false) || VAR(false), "(false || false)");
+                expectFailure(check, VAR(sum3)(1, 2, 3) == 7, "(sum3(1, 2, 3) == 7)");
             }),
             simple("ValueSemantics", [] (Check& check) {
                 MoveTracker moveTracker;
 
-                M_EXPR(moveTracker);
-                check("We don't steal the expression object", ! M_EXPR(moveTracker.moved()));
+                VAR(moveTracker);
+                check("We don't steal the expression object", ! VAR(moveTracker.moved()));
 
-                M_EXPR([] (const MoveTracker&) {}) (moveTracker);
-                check("We don't steal function arguments", ! M_EXPR(moveTracker.moved()));
+                VAR([] (const MoveTracker&) {}) (moveTracker);
+                check("We don't steal function arguments", ! VAR(moveTracker.moved()));
 
                 // Need to run through sanitizers to check we don't store refs to temporaries
                 int a = 1;
                 int b = 1;
-                check("We don't store refs to temporaries", M_EXPR(a + b) == 2);
+                check("We don't store refs to temporaries", VAR(a + b) == 2);
 
                 namespace Conf = Assertion::Impl::Configurable;
 
                 static_assert(
-                        is_same<decltype(M_EXPR(a + b)), Conf::VariableValueExpression<int>>::value,
+                        is_same<decltype(VAR(a + b)), Conf::VariableValueExpression<int>>::value,
                         "Temporaries are stored by value"
                     );
 
                 static_assert(
-                        is_same<decltype(M_EXPR(a)), Conf::VariableRefExpression<int>>::value,
+                        is_same<decltype(VAR(a)), Conf::VariableRefExpression<int>>::value,
                         "Variables are stored by reference"
+                );
+
+                const auto aConst = a;
+
+                static_assert(
+                        is_same<decltype(VAR(aConst)), Conf::VariableRefExpression<const int>>::value,
+                        "const is preserved"
+                );
+
+                static_assert(
+                    is_same<
+                        decltype(VAR(id)(a + b)),
+                        Conf::Function<reference_wrapper<int(int)>, int>
+                    >::value,
+                    "Temporaries are stored by value"
+                );
+
+                static_assert(
+                    is_same<
+                        decltype(VAR(id)(a)),
+                        Conf::Function<reference_wrapper<int(int)>, int&>
+                    >::value,
+                    "Values are stored by reference"
                 );
             }),
             simple("ThrowSucceeds", [] (Check& check) {
-                testAssertThrows<exception>(M_EXPR([] { throw runtime_error("test"); }));
-                testAssertThrows<runtime_error>(M_EXPR([] { throw runtime_error("test"); }));
+                testAssertThrows<exception>(VAR([] { throw runtime_error("test"); }));
+                testAssertThrows<runtime_error>(VAR([] { throw runtime_error("test"); }));
             }),
             simple("ThrowFails", [] (Check& check) {
                 expectException<logic_error>(
                         check,
-                        M_EXPR([] { throw runtime_error("test"); }),
+                        VAR([] { throw runtime_error("test"); }),
                         "[] { throw runtime_error(\"test\"); }"
                     );
 
                 expectException<runtime_error>(
                         check,
-                        M_EXPR([] {} ),
+                        VAR([] {} ),
                         "[] {}"
                 );
 

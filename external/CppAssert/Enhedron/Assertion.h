@@ -29,6 +29,4 @@ namespace Enhedron {
     using Impl::Assertion::Assert;
 }
 
-#define M_EXPR M_ENHEDRON_VAR
-#define M_DEBUG M_ENHEDRON_DEBUG
-#define M_DEBUG_EXTRA M_ENHEDRON_DEBUG_EXTRA
+#define VAR M_ENHEDRON_VAR

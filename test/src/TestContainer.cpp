@@ -28,10 +28,10 @@ namespace Enhedron {
         void when() { tree.set("testKey"); }
 
         void then() {
-            check("the key is in the tree", M_EXPR(bool(tree.get("testKey"))));
-            check("an arbitrary different key is not in the tree", ! M_EXPR(bool(tree.get("testKey1"))));
-            check("the tree is not empty", ! M_EXPR(tree.empty()));
-            check("the tree has 1 child", M_EXPR(tree.childCount()) == 1u);
+            check("the key is in the tree", VAR(bool(tree.get("testKey"))));
+            check("an arbitrary different key is not in the tree", ! VAR(bool(tree.get("testKey1"))));
+            check("the tree is not empty", ! VAR(tree.empty()));
+            check("the tree has 1 child", VAR(tree.childCount()) == 1u);
         }
     };
 
@@ -60,16 +60,16 @@ namespace Enhedron {
             for (const auto& node : path) {
                 auto mayBeSubTreeRef = subTreeRef->get(node);
 
-                if ( ! check("subtree exists", M_EXPR(bool(mayBeSubTreeRef)))) {
+                if ( ! check("subtree exists", VAR(bool(mayBeSubTreeRef)))) {
                     break;
                 }
 
                 subTreeRef = *mayBeSubTreeRef;
             }
 
-            check("no more subtrees exist", M_EXPR(subTreeRef->childCount()) == 0u);
-            check("the tree is not empty", ! M_EXPR(tree.empty()));
-            check("there is exactly one child", M_EXPR(tree.childCount()) == 1u);
+            check("no more subtrees exist", VAR(subTreeRef->childCount()) == 0u);
+            check("the tree is not empty", ! VAR(tree.empty()));
+            check("there is exactly one child", VAR(tree.childCount()) == 1u);
         }
     };
 

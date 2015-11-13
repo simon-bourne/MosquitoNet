@@ -6,7 +6,8 @@
 
 - Exhaustively test every combination of parameters for a test. 
 - Extensible assertions.
-- Minimal use of macros. You'll only need `M_EXPR`, and that's not even doing anything clever.
+- `VAR` is the only macro you'll need, and that's just adding file and line info to a function. If the name clashes,
+`#undef` it and `#define MY_VAR M_ENHEDRON_VAR`.
 - Nested contexts.
 - Simple or BDD style tests.
 - Tests will run through all checks and report all errors so you see everything that failed in a test, not just the
@@ -40,7 +41,7 @@ static Test::Unit u(context("Util",
             result += c;
             result += postfix;
 
-            check(M_EXPR(jsonEscape(input)) == result);
+            check(VAR(jsonEscape(input)) == result);
         }
     )
 );
@@ -52,7 +53,6 @@ Some things to note:
 `for` loop. Perhaps a `boost::irange` or a container that generates `N` random numbers, or even a constant.
 - `static Test::Unit u(...)` creates a context to which we can add many unit tests or sub-contexts.
 - `context("Util", ...)` creates a nested context. There's no limit on the depth of nesting.
-- `M_EXPR` is the only macro used here. All it does is add file and line information to a C++ function call.
 
 Can I customize assertions?
 
@@ -70,8 +70,8 @@ You can automatically use it in assertions:
 int a = 1;
 int b = 2;
 int c = 3;
-check(M_EXPR(sum3)(a, b, c) == 6); // This will pass.
-check(M_EXPR(sum3)(a, b, c) == 7); // This will fail with the message:
+check(VAR(sum3)(a, b, c) == 6); // This will pass.
+check(VAR(sum3)(a, b, c) == 7); // This will fail with the message:
     // Test failed: (sum3(1, 2, 3) == 7)
     //    sum3 = function: in file /path/to/file.cpp, line 5
 ```
@@ -84,7 +84,11 @@ int b = 2;
 int c = 3;
 int contextVariable1 = 10;
 const char* contextVariable2 = "Looks like something went wrong!";
-check(M_EXPR(sum3)(a, b, c) == 7 && M_EXPR(a) == M_EXPR(b), M_EXPR(contextVariable1), M_EXPR(contextVariable2));
+check(
+    VAR(sum3)(a, b, c) == 7 && VAR(a) == VAR(b),
+    VAR(contextVariable1),
+    VAR(contextVariable2)
+);
 ```
 
 will fail with the message:
@@ -103,10 +107,10 @@ No problem:
 
 ```C++
 simple("jsonEscape", [] (Check& check) {
-    check(M_EXPR(jsonEscape("")) == "");
-    check(M_EXPR(jsonEscape(helloWorld)) == helloWorld);
-    check(M_EXPR(jsonEscape("prefix\u0001postfix")) == "prefix\\u0001postfix");
-    check(M_EXPR(jsonEscape("prefix\u0010postfix")) == "prefix\\u0010postfix");
+    check(VAR(jsonEscape("")) == "");
+    check(VAR(jsonEscape(helloWorld)) == helloWorld);
+    check(VAR(jsonEscape("prefix\u0001postfix")) == "prefix\\u0001postfix");
+    check(VAR(jsonEscape("prefix\u0010postfix")) == "prefix\\u0010postfix");
 })
 ```
 
