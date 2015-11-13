@@ -573,5 +573,5 @@ namespace Enhedron { namespace Assertion {
     using Impl::Configurable::ProcessFailure;
 }}
 
-#define M_ENHEDRON_VAR(expression) \
+#define M_ENHEDRON_VAL(expression) \
     (::Enhedron::Assertion::Impl::Configurable::makeVariable((#expression), (expression), (__FILE__), (__LINE__)))
