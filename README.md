@@ -1,4 +1,4 @@
-# CppUnitTest
+# MosquitoNet
 
 [![Build Status](https://travis-ci.org/simon-bourne/CppUnitTest.png)](https://travis-ci.org/simon-bourne/CppUnitTest)
 
