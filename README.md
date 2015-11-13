@@ -97,8 +97,8 @@ Test failed: ((sum3(1, 2, 3) == 7) && (a == b))
     sum3 = function: in file /path/to/file.cpp, line 195
     a = 1: in file /path/to/file.cpp, line 195
     b = 2: in file /path/to/file.cpp, line 195
-    context1 = 10: in file /path/to/file.cpp, line 195
-    context2 = Looks like something went wrong!: in file /path/to/file.cpp, line 195
+    context1 = 10: in file /path/to/file.cpp, line 196
+    context2 = Looks like something went wrong!: in file /path/to/file.cpp, line 197
 ```
 
 That's all very cool, but I really just want a quick and simple test.
