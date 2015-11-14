@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/CppUnitTest.iml" filepath="$PROJECT_DIR$/.idea/CppUnitTest.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Enhedron.iml" filepath="$PROJECT_DIR$/.idea/Enhedron.iml" />
     </modules>
   </component>
 </project>
