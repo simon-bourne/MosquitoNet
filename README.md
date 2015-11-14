@@ -120,32 +120,34 @@ simple("jsonEscape", [] (Check& check) {
 })
 ```
 
-What about BDD? It avoids almost aspect oriented DSL's of other testing frameworks, and sticks to a familiar C++ style.
+What about BDD? 
+ 
+MosquitoNet avoids the almost aspect oriented DSL's of other testing frameworks, and sticks to a familiar C++ style.
 This does cost a bit of boiler plate, but allows you to compose tests with standard C++ paradigms and makes control flow
 clear.
 
 ```C++
-    struct BDDTest : GWT {
-        BDDTest() : GWT(
-            Given("some starting point"),
-            When("we do something"),
-            Then("we can verify the result")
-        )
-        // Set up the test.
-        {}
+struct BDDTest : GWT {
+    BDDTest() : GWT(
+        Given("some starting point"),
+        When("we do something"),
+        Then("we can verify the result")
+    )
+    // Set up the test.
+    {}
 
-        void when() {
-            // Do something
-        }
+    void when() {
+        // Do something
+    }
 
-        void then() {
-            // Check the result
-        }
-    };
+    void then() {
+        // Check the result
+    }
+};
 
-    static Test::Unit u(
-        gwt<BDDTest>("A bdd test")
-    );
+static Test::Unit u(
+    gwt<BDDTest>("A bdd test")
+);
 ```
 
 And if I want to parameterize my test?
@@ -153,33 +155,33 @@ And if I want to parameterize my test?
 Easy.
 
 ```C++
-    class BDDTest final: GWT {
-        int x_;
-        int y_;
-    public:
-        BDDTest(int x, int y) : GWT(
-            Given("some starting point"),
-            When("we do something"),
-            Then("we can verify the result")
-        ) : x_(x), y_(y) {}
-    
-        void when() {}
-        void then() { check(VAL(x) == VAL(y)); }
-    };
+class BDDTest final: GWT {
+    int x_;
+    int y_;
+public:
+    BDDTest(int x, int y) : GWT(
+        Given("some starting point"),
+        When("we do something"),
+        Then("we can verify the result")
+    ) : x_(x), y_(y) {}
 
-    void simpleTest(Check& check, int number, int anotherNumber);
-    
-    static Test::Unit u(
-        context("SomeTest",
-            gwt<BDDTest>("A BDD test", 1, 1),
-            simple("A simple test", simpleTest, 1, 2)
-        )
-    );
+    void when() {}
+    void then() { check(VAL(x) == VAL(y)); }
+};
+
+void simpleTest(Check& check, int number, int anotherNumber);
+
+static Test::Unit u(
+    context("SomeTest",
+        gwt<BDDTest>("A BDD test", 1, 1),
+        simple("A simple test", simpleTest, 1, 2)
+    )
+);
 ```
 
 ## Further Examples
 
-Take a look at the tests for [Util](test/src/TestUtil.cpp) or [Container](test/src/TestContainer.cpp) 
+Take a look at the tests for [Util](cpp/test/src/TestUtil.cpp) or [Container](cpp/test/src/TestContainer.cpp) 
 
 ## TODO
 
