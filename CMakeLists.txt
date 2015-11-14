@@ -1,15 +1,16 @@
 cmake_minimum_required(VERSION 2.8.7)
-project(Enhedron_CppUtil)
+project(Enhedron)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -Wconversion -Werror -pedantic")
 
-include_directories(test/include external/CppUtil external/CppLog external/CppAssert)
+include_directories(cpp/test/include cpp/lib/include)
 find_package(Boost COMPONENTS program_options REQUIRED)
 
 add_executable(test-harness
-        test/src/TestHarness.cpp
-        test/src/TestUtil.cpp
-        test/src/TestContainer.cpp
-        test/src/TestAssert.cpp)
+        cpp/test/src/TestHarness.cpp
+        cpp/test/src/TestUtil.cpp
+        cpp/test/src/TestContainer.cpp
+        cpp/test/src/TestAssert.cpp)
 
 target_link_libraries(test-harness ${Boost_LIBRARIES})
+
