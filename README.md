@@ -2,6 +2,9 @@
 
 [![Build Status](https://travis-ci.org/simon-bourne/MosquitoNet.png)](https://travis-ci.org/simon-bourne/MosquitoNet)
 
+This is currently under active development. If it looks interesting to you, but there's a feature or improvement you'd
+like, please create an issue.
+
 ## Features
 
 - Exhaustively test every combination of parameters for a test. 
