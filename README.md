@@ -1,6 +1,6 @@
 # MosquitoNet
 
-[![Build Status](https://travis-ci.org/simon-bourne/CppUnitTest.png)](https://travis-ci.org/simon-bourne/CppUnitTest)
+[![Build Status](https://travis-ci.org/simon-bourne/MosquitoNet.png)](https://travis-ci.org/simon-bourne/MosquitoNet)
 
 ## Features
 
