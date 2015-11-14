@@ -469,7 +469,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             Check check;
 
             try {
-                runTest(forward<Args>(args)..., check);
+                runTest(check, forward<Args>(args)...);
             }
             catch (const exception& e) {
                 check.addException(e);

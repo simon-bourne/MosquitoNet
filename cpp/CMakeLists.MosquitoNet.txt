@@ -10,7 +10,8 @@ add_executable(test-harness
         cpp/test/src/TestHarness.cpp
         cpp/test/src/TestUtil.cpp
         cpp/test/src/TestContainer.cpp
-        cpp/test/src/TestAssert.cpp)
+        cpp/test/src/TestAssert.cpp
+        cpp/test/src/TestCommandLine.cpp)
 
 target_link_libraries(test-harness ${Boost_LIBRARIES})
 
