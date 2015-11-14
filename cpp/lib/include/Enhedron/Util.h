@@ -112,6 +112,8 @@ namespace Enhedron { namespace Impl { namespace Util {
 
         template<typename Object>
         static Finally wrap(Object object) { return Finally([object(move(object))] {}); }
+
+        static Finally empty() { return Finally([] {}); }
     };
 }}}
 

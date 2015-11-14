@@ -182,17 +182,3 @@ static Test::Unit u(
 ## Further Examples
 
 Take a look at the tests for [Util](cpp/test/src/TestUtil.cpp) or [Container](cpp/test/src/TestContainer.cpp) 
-
-## TODO
-
-I like the sound of this so far. What output formats do you support?
-
-Ahem, that's one of the things that currently sucks. It just logs the output in json format which is not very readable.
-
-Some other stuff that really needs fixing:
-
-- It's only been built on linux with gcc 4.9.
-- Exhaustive testing doesn't tell you which scenarios failed, it just logs the check that failed.
-- Documentation.
-- It depends on boost. This is the only thing stopping it compile with clang.
-- Probably a load more stuff. Please log an issue or add a +1 to an existing issue.

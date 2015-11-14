@@ -3,26 +3,18 @@
 #pragma once
 
 #include "Enhedron/Util.h"
-#include "Enhedron/Log.h"
-#include "Enhedron/Util/Enum.h"
-#include "Enhedron/Assertion/Configurable.h"
-#include "Enhedron/Assertion.h"
-#include "Enhedron/Test/Module.h"
-#include "Enhedron/Container/StringTree.h"
-
-#include <boost/optional/optional.hpp>
 
 #include <memory>
 #include <string>
 #include <stdexcept>
 
 namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
-    using LogBlock = Log::BlockLogger<Log::DefaultWriter>;
-
     using std::exception;
     using std::string;
     using std::unique_ptr;
     using std::make_unique;
+    using std::ostream;
+    using std::endl;
 
     class ResultTest: public NoCopy {
     public:
@@ -59,95 +51,157 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
         virtual void finish(uint64_t ran, uint64_t failed) = 0;
     };
 
-    class DefaultResultGWTTest: public ResultGWTTest {
-        LogBlock block;
+
+    class HumanResultTest final: public NoCopy {
+        Out<ostream> outputStream_;
+
+        void indent() {
+            (*outputStream_) << "    ";
+        }
     public:
-        DefaultResultGWTTest(const string& name) :
-                block(log.infoBlock("gwtTest", "name", name))
+        HumanResultTest(Out<ostream> outputStream) :
+                outputStream_(outputStream)
         {}
 
-        virtual Finally init() override {
-            return Finally::wrap(log.infoBlock("given"));
+        void describe(const string& text) {
+            indent();
+            indent();
+            (*outputStream_) << text << endl;
         }
 
-        virtual void given(const string& text) override {
-            log.info("given", "text", text);
+        void spec(const string& text) {
+            indent();
+            indent();
+            (*outputStream_) << text << endl;
         }
 
-        virtual Finally when(const string& text) override {
-            return Finally::wrap(log.infoBlock("when", "text", text));
+        void passCheck(const string& description) {}
+
+        void failCheck(const string& description) {
+            indent();
+            (*outputStream_) << "TEST FAILED! " << description << endl;
         }
 
-        virtual Finally then(const string& text) override {
-            return Finally::wrap(log.infoBlock("then", "text", text));
-        }
-
-        virtual void passCheck(const string& description) override {}
-
-        virtual void failCheck(const string& description) override {
-            log.error("failed", "description", description);
-        }
-
-        virtual void failByException(const exception& e) override {
-            log.error("exception", "exception", e.what());
+        void failByException(const exception& e) {
+            indent();
+            (*outputStream_) << "TEST FAILED! Exception: " << e.what() << endl;
         }
     };
 
-    class DefaultResultSimpleTest final: public ResultSimpleTest {
+    class HumanResultGWTTest: public ResultGWTTest {
+        HumanResultTest test;
     public:
-        LogBlock block;
+        HumanResultGWTTest(Out<ostream> outputStream) :
+            test(outputStream)
+        {}
+
+        virtual Finally init() override {
+            return Finally::empty();
+        }
+
+        virtual void given(const string& text) override {
+            test.spec("Given " + text + ",");
+        }
+
+        virtual Finally when(const string& text) override {
+            test.spec("when " + text + ",");
+            return Finally::empty();
+        }
+
+        virtual Finally then(const string& text) override {
+            test.spec("then " + text + ".");
+            return Finally::empty();
+        }
+
+        virtual void passCheck(const string& description) override {}
+
+        virtual void failCheck(const string& description) override {
+            test.failCheck(description);
+        }
+
+        virtual void failByException(const exception& e) override {
+            test.failByException(e);
+        }
+    };
+
+    class HumanResultSimpleTest final: public ResultSimpleTest {
+        HumanResultTest test;
     public:
-        DefaultResultSimpleTest(const string& name) :
-                block(log.infoBlock("simpleTest", "name", name))
+        HumanResultSimpleTest(Out<ostream> outputStream) :
+            test(outputStream)
         {}
 
         virtual void passCheck(const string& description) override {}
 
         virtual void failCheck(const string& description) override {
-            log.error("failed", "description", description);
+            test.failCheck(description);
         }
 
         virtual void failByException(const exception& e) override {
-            log.error("exception", "exception", e.what());
+            test.failByException(e);
         }
     };
 
     template<typename Base>
-    class DefaultResultContext: public Base {
-        LogBlock block;
+    class HumanResultContext: public Base {
+        Out<ostream> outputStream_;
+        bool contextPrinted_ = false;
+        string path_;
+
+        void writeTestName(const string& testName) {
+            if ( ! contextPrinted_) {
+                contextPrinted_ = true;
+                *outputStream_ << path_ << "\n";
+            }
+
+            *outputStream_ << "    " << testName << endl;
+        }
     public:
-        DefaultResultContext(const string& name) : block(log.infoBlock("context", "name", name)) {}
+        HumanResultContext(Out<ostream> outputStream, const string& name) :
+            outputStream_(outputStream), path_(name) {
+        }
 
         virtual unique_ptr<ResultContext> child(const string& name) override {
-            return make_unique<DefaultResultContext<ResultContext>>(name);
+            string childPath(path_);
+            
+            if ( ! path_.empty()) {
+                childPath += ".";
+            }
+            
+            childPath += name;
+            
+            return make_unique<HumanResultContext<ResultContext>>(outputStream_, childPath);
         }
 
         virtual void listTest(const string& name) override {
-            log.info("testCase", "name", name);
+            writeTestName(name);
         }
 
         virtual unique_ptr<ResultSimpleTest> simpleTest(const string& name) override {
-            return make_unique<DefaultResultSimpleTest>(name);
+            writeTestName(name);
+            return make_unique<HumanResultSimpleTest>(outputStream_);
         }
 
         virtual unique_ptr<ResultGWTTest> gwtTest(const string& name) override {
-            return make_unique<DefaultResultGWTTest>(name);
+            writeTestName(name);
+            return make_unique<HumanResultGWTTest>(outputStream_);
         }
     };
 
-    class DefaultResults final: public DefaultResultContext<Results> {
+    class HumanResults final: public HumanResultContext<Results> {
+        Out<ostream> outputStream_;
     public:
-        DefaultResults() : DefaultResultContext("root") {}
+        HumanResults(Out<ostream> outputStream) :
+                HumanResultContext(outputStream, ""), outputStream_(outputStream) {}
 
         virtual void finish(uint64_t ran, uint64_t failed) override {
             uint64_t passed = ran - failed;
 
             if (failed != 0) {
-                log.error("testsFailed", "message", "SOME TESTS FAILED!!!", "ran", ran, "passed", passed, "failed", failed);
+                *outputStream_ << "FAILED: " << failed << ",";
             }
-            else {
-                log.info("OK", "ran", ran, "passed", passed, "failed", failed);
-            }
+
+            *outputStream_ << "OK: " << passed << endl;
         }
     private:
         Finally logBlock(const char* type, const string& name) {
@@ -162,5 +216,5 @@ namespace Enhedron { namespace Test {
     using Impl::Impl_Results::ResultSimpleTest;
     using Impl::Impl_Results::ResultTest;
     using Impl::Impl_Results::ResultGWTTest;
-    using Impl::Impl_Results::DefaultResults;
+    using Impl::Impl_Results::HumanResults;
 }}

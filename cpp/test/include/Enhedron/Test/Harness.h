@@ -51,10 +51,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
 
         auto optionalSpecifyTest = options.optional<string>(option::runTest);
 
-        if (optionalSpecifyTest) {
-            pathList.push_back(replace_all_copy(*optionalSpecifyTest, "/", "."));
-        }
-        else {
+        if ( ! optionalSpecifyTest) {
             pathList = options.getPositional<string>();
         }
 

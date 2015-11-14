@@ -21,6 +21,7 @@
 #include <vector>
 #include <stdexcept>
 #include <tuple>
+#include <iostream>
 
 namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     template<size_t argCount>
@@ -62,6 +63,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using std::remove_reference;
     using std::bind;
     using std::ref;
+    using std::cout;
 
     class Stats {
     public:
@@ -140,8 +142,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             auto child = getChildTree(pathTree);
 
             if (child) {
+                auto resultChild = results->child(name);
+
                 for (const auto& context : contextList) {
-                    context->list(*child, out(*results->child(name)));
+                    context->list(*child, out(*resultChild));
                 }
             }
         }
@@ -151,8 +155,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             Stats stats;
 
             if (child) {
+                auto resultChild = results->child(name);
+
                 for (const auto& context : contextList) {
-                    stats += context->run(*child, out(*results->child(name)));
+                    stats += context->run(*child, out(*resultChild));
                 }
             }
 
@@ -580,12 +586,12 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     }
 
     inline void list(const StringTree& pathTree) {
-        DefaultResults results;
+        HumanResults results(out(cout));
         list(pathTree, out(results));
     }
 
     inline bool run(const StringTree& pathTree) {
-        DefaultResults results;
+        HumanResults results(out(cout));
         return run(pathTree, out(results));
     }
 }}}}
