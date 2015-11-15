@@ -24,28 +24,40 @@ the string will be corner cases. We also want to test each individual escape cod
 test every combination of these arguments.
 
 ```C++
+static const auto escapedPairs = choice(
+        make_pair('\"', '\"'),
+        make_pair('\\', '\\'),
+        make_pair('\b', 'b'),
+        make_pair('\f', 'f'),
+        make_pair('\n', 'n'),
+        make_pair('\r', 'r'),
+        make_pair('\t', 't')
+);
+
 static Test::Unit u(context("Util",
     exhaustive(
-            choice('\"', '\\', '\b', '\f', '\n', '\r', '\t'),
+            escapedPairs,
             choice("", "prefix"),
             choice("", "postfix")
         ).
-        simple("Escaping JSON strings", [] (
-                Check& check,
-                char c, const string& prefix, const string& postfix
-            )
-        {
-            string input(prefix);
-            input += c;
-            input += postfix;
+        simple("jsonEscapingCombo", [] (
+                    Check& check,
+                    pair<char, char> c,
+                    const string& prefix,
+                    const string& postfix
+                )
+            {
+                string input(prefix);
+                input += c.first;
+                input += postfix;
 
-            string result(prefix);
-            result += '\\';
-            result += c;
-            result += postfix;
+                string result(prefix);
+                result += '\\';
+                result += c.second;
+                result += postfix;
 
-            check(VAL(jsonEscape(input)) == result);
-        }
+                check(VAL(jsonEscape(input)) == result);
+            }
     )
 );
 ```

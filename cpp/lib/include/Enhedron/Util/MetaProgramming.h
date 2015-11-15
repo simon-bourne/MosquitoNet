@@ -7,12 +7,35 @@
 #include <utility>
 
 namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgramming {
+    template<size_t argCount>
+    struct TailArgPlaceHolder {
+        static TailArgPlaceHolder instance;
+    };
+
+    template<size_t argCount>
+    TailArgPlaceHolder<argCount> TailArgPlaceHolder<argCount>::instance;
+}}}}
+
+namespace std {
+    template<size_t argCount>
+    struct is_placeholder<::Enhedron::Util::Impl::Impl_MetaProgramming::TailArgPlaceHolder<argCount>> : integral_constant<size_t, argCount> { };
+}
+
+namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgramming {
     using std::tuple;
     using std::index_sequence;
     using std::index_sequence_for;
     using std::forward;
     using std::get;
     using std::remove_reference_t;
+    using std::is_array;
+    using std::is_function;
+    using std::enable_if_t;
+
+    template<typename BoundFunctor, class Value, size_t... indices>
+    auto bindFirst(BoundFunctor&& f, Value value, index_sequence<indices...>) {
+        return bind(forward<BoundFunctor>(f), value, TailArgPlaceHolder<indices + 1>::instance...);
+    }
 
     template<typename Functor, size_t... indices, typename... Args>
     auto extractParameterPack(Functor&& f, index_sequence<indices...>, const tuple<Args...>& args) {
@@ -43,6 +66,24 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
         args
         );
     }
+
+    template<typename T, typename Enable = void>
+    struct DecayArray {
+        using type = T;
+    };
+
+    template<typename T>
+    struct DecayArray<T, enable_if_t<is_array<remove_reference_t<T>>::value>> {
+        using type = typename std::remove_extent<remove_reference_t<T>>::type*;
+    };
+
+    template<typename T>
+    struct DecayArray<T, enable_if_t<is_function<remove_reference_t<T>>::value>> {
+        using type = typename std::reference_wrapper<remove_reference_t<T>>::type;
+    };
+
+    template<typename T>
+    using DecayArray_t = typename DecayArray<T>::type;
 
     template<typename... Args>
     class StoreArgs final: public NoCopy {
@@ -88,6 +129,9 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
 
 namespace Enhedron { namespace Util {
     using Impl::Impl_MetaProgramming::StoreArgs;
+    using Impl::Impl_MetaProgramming::DecayArray;
+    using Impl::Impl_MetaProgramming::DecayArray_t;
+    using Impl::Impl_MetaProgramming::bindFirst;
     using Impl::Impl_MetaProgramming::mapTuple;
     using Impl::Impl_MetaProgramming::mapParameterPack;
     using Impl::Impl_MetaProgramming::extractParameterPack;

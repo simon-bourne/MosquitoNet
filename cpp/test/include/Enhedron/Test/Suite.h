@@ -24,27 +24,14 @@
 #include <iostream>
 
 namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
-    template<size_t argCount>
-    struct TailArgPlaceHolder {
-        static TailArgPlaceHolder instance;
-    };
-
-    template<size_t argCount>
-    TailArgPlaceHolder<argCount> TailArgPlaceHolder<argCount>::instance;
-}}}}
-
-namespace std {
-    template<size_t argCount>
-    struct is_placeholder<::Enhedron::Test::Impl::Impl_Suite::TailArgPlaceHolder<argCount>> : integral_constant<size_t, argCount> { };
-}
-
-namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using namespace Assertion;
 
     using Container::StringTree;
 
     using Util::TaggedValue;
     using Util::StoreArgs;
+    using Util::DecayArray_t;
+    using Util::bindFirst;
 
     using boost::optional;
 
@@ -451,7 +438,14 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
     template<typename TestClass, typename... Args>
     unique_ptr<Context> gwt(string name, Args&&... args) {
-        return make_unique<Runner<function<void(Args&&..., const string&, Out<ResultContext>)>, Args...>>(
+        return make_unique<
+                    Runner<function<void(
+                            DecayArray_t< Args>&&...,
+                            const string&, Out<ResultContext>
+                    )>,
+                    DecayArray_t< Args>...>
+                >
+            (
                 move(name),
                 runGwt<TestClass, Args...>,
                 forward<Args>(args)...
@@ -481,10 +475,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
     template<typename Functor, typename... Args>
     unique_ptr<Context> simple(string name, Functor runTest, Args&&... args) {
-        return make_unique<Runner<RunSimple<Functor, Args...>, Args...>>(
+        return make_unique<Runner<RunSimple<Functor, DecayArray_t< Args>...>, DecayArray_t< Args>...>>(
                 move(name),
-                RunSimple<Functor, Args...>(runTest),
-                forward<Args>(args)...
+                RunSimple<Functor, DecayArray_t< Args>...>(runTest),
+                forward<DecayArray_t< Args>>(args)...
             );
     }
 
@@ -492,11 +486,6 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     class RunExhaustive final: public NoCopy {
         Functor runTest;
         StoreArgs<Args...> args;
-
-        template<typename BoundFunctor, class Value, size_t... indices>
-        static auto bindFirst(BoundFunctor&& f, Value value, index_sequence<indices...>) {
-            return bind(forward<BoundFunctor>(f), value, TailArgPlaceHolder<indices + 1>::instance...);
-        }
 
         template<typename BoundFunctor>
         static void exhaustiveImpl(BoundFunctor&& functor) {
@@ -574,7 +563,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
     template<typename... Args>
     Exhaustive<Args...> exhaustive(Args&&... args) {
-        return Exhaustive<Args...>(forward<Args>(args)...);
+        return Exhaustive<DecayArray_t< Args>...>(forward<DecayArray_t< Args>>(args)...);
     }
 
     inline void list(const StringTree& pathTree, Out<Results> results) {

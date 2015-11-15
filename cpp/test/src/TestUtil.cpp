@@ -3,8 +3,13 @@
 #include "Enhedron/Util/Json.h"
 #include "Enhedron/Util/Math.h"
 
+#include <string>
+#include <utility>
+
 namespace Enhedron {
     using std::string;
+    using std::pair;
+    using std::make_pair;
 
     using namespace Test;
     using namespace Util;
@@ -16,6 +21,16 @@ namespace Enhedron {
         VALUE_1,
         LAST_ENUM_VALUE = SimpleEnum::VALUE_1
     };
+
+    static const auto escapedPairs = choice(
+            make_pair('\"', '\"'),
+            make_pair('\\', '\\'),
+            make_pair('\b', 'b'),
+            make_pair('\f', 'f'),
+            make_pair('\n', 'n'),
+            make_pair('\r', 'r'),
+            make_pair('\t', 't')
+    );
 
     static Test::Suite u("Util",
         simple("out", [] (Check& check) {
@@ -48,24 +63,31 @@ namespace Enhedron {
             check(VAL(jsonEscape)(helloWorld) == VAL(helloWorld));
             check(VAL(jsonEscape("prefix\u0001postfix")) == "prefix\\u0001postfix");
             check(VAL(jsonEscape("prefix\u0010postfix")) == "prefix\\u0010postfix");
+            check(VAL(jsonEscape("prefix\tpostfix")) == "prefix\\tpostfix");
         }),
         exhaustive(
-                choice('\"', '\\', '\b', '\f', '\n', '\r', '\t'),
+                escapedPairs,
                 choice("", "prefix"),
                 choice("", "postfix")
             ).
-            simple("jsonEscapingCombo", [] (Check& check, char c, const string& prefix, const string& postfix) {
-                string input(prefix);
-                input += c;
-                input += postfix;
+            simple("jsonEscapingCombo", [] (
+                        Check& check,
+                        pair<char, char> c,
+                        const string& prefix,
+                        const string& postfix
+                    )
+                {
+                    string input(prefix);
+                    input += c.first;
+                    input += postfix;
 
-                string result(prefix);
-                result += '\\';
-                result += c;
-                result += postfix;
+                    string result(prefix);
+                    result += '\\';
+                    result += c.second;
+                    result += postfix;
 
-                check(VAL(jsonEscape(input)) == result);
-            }
+                    check(VAL(jsonEscape(input)) == result);
+                }
         ),
         context("math",
             simple("divideRoundingUp", [] (Check& check) {

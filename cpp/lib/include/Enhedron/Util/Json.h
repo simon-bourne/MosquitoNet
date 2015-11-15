@@ -14,14 +14,32 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Json {
         for (auto c : input) {
             switch (c) {
                 case '\"':
+                    escapedString.append("\\");
+                    escapedString += '\"';
+                    break;
                 case '\\':
+                    escapedString.append("\\");
+                    escapedString += '\\';
+                    break;
                 case '\b':
+                    escapedString.append("\\");
+                    escapedString += 'b';
+                    break;
                 case '\f':
+                    escapedString.append("\\");
+                    escapedString += 'f';
+                    break;
                 case '\n':
+                    escapedString.append("\\");
+                    escapedString += 'n';
+                    break;
                 case '\r':
+                    escapedString.append("\\");
+                    escapedString += 'r';
+                    break;
                 case '\t':
                     escapedString.append("\\");
-                    escapedString += c;
+                    escapedString += 't';
                     break;
                 default:
                     if (c < 0x20) {
