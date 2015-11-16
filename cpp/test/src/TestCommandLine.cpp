@@ -16,7 +16,7 @@ namespace Enhedron { namespace Impl_TestCommandLine {
     using std::vector;
     using std::string;
 
-    using Args = initializer_list<const char*>;
+    using Args = vector<const char*>;
 
     void testEmpty(Check& check, vector<const char*> args, ExitStatus exitStatus, const char* expectedOutput) {
         ostringstream output;
