@@ -71,7 +71,7 @@ Some things to note:
 
 Can I customize checks?
 
-Yes. There's not really anything you need to do. For example, if you wrote this function:
+Yes. There's not much, if anything, you need to do. For example, if you wrote this function:
 
 ```C++
 int sum3(int x, int y, int z) {
@@ -79,7 +79,7 @@ int sum3(int x, int y, int z) {
 }
 ```
 
-You can automatically use it in assertions:
+You can automatically use it in assertions, and it will print the values of each argument:
 
 ```C++
 int a = 1;
@@ -90,6 +90,8 @@ check(VAL(sum3)(a, b, c) == 7); // This will fail with the message:
     // Test failed: (sum3(1, 2, 3) == 7)
     //    sum3 = function: in file /path/to/file.cpp, line 5
 ```
+
+You'll need to have an `operator<<` or specialize `Enhedron::Assertion::Convert` to be able to print the types.
 
 You can also have more complex expressions and add context expressions to give more detail on the output:
 
