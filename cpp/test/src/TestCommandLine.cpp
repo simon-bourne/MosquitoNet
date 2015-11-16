@@ -34,8 +34,8 @@ namespace Enhedron { namespace Impl_TestCommandLine {
     }
 
     static Test::Suite s("CommandLine",
-         simple("NoExeName", testEmpty, Args{}, ExitStatus::USAGE, "Error: argc is 0.\n"),
-         simple("NullArgv", testEmpty, Args{nullptr}, ExitStatus::USAGE, "Error: argv has null value.\n"),
+         simple("NoExeName", testEmpty, Args{}, ExitStatus::SOFTWARE, "Exception: argc is 0.\n"),
+         simple("NullArgv", testEmpty, Args{nullptr}, ExitStatus::SOFTWARE, "Exception: argv has null value.\n"),
          simple("Empty", testEmpty, Args{""}, ExitStatus::OK, ""),
          simple("ExitStatus", testEmpty, Args{""}, ExitStatus::CONFIG, ""),
 

@@ -30,6 +30,8 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
     using std::index_sequence_for;
     using std::forward;
     using std::cerr;
+    using std::runtime_error;
+    using std::exception;
 
     enum class ExitStatus {
         OK,
@@ -109,7 +111,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
         }
 
         template<typename Functor>
-        ExitStatus run(
+        ExitStatus runImpl(
                 map<string, vector<string>> optionValues,
                 vector<string> positionalArgs,
                 set<string> setFlags,
@@ -120,7 +122,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
         }
 
         template<typename Functor, typename... ParamTail>
-        ExitStatus run(
+        ExitStatus runImpl(
                 map<string, vector<string>> optionValues,
                 vector<string> positionalArgs,
                 set<string> setFlags,
@@ -144,7 +146,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                 *output_ << "Error: Multiple values for " + param.longName() << "\n";
             }
 
-            return run(
+            return runImpl(
                     move(optionValues),
                     move(positionalArgs),
                     move(setFlags),
@@ -158,7 +160,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
         }
 
         template<typename Functor, typename... ParamTail>
-        ExitStatus run(
+        ExitStatus runImpl(
                 map<string, vector<string>> optionValues,
                 vector<string> positionalArgs,
                 set<string> setFlags,
@@ -173,7 +175,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                 flagValue = setFlags.count(name) > 0;
             });
 
-            return run(
+            return runImpl(
                     move(optionValues),
                     move(positionalArgs),
                     move(setFlags),
@@ -230,34 +232,17 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
 
             readNamesImpl(optionNames, allNames, param, paramsTail...);
         }
-    public:
-        Arguments(Out<ostream> output, string description, string notes) :
-                output_(output),
-                description_(description),
-                notes_(notes)
-        {}
 
-        // TODO: Help to cout, errors to cerr.
-        Arguments(string description, string notes) : Arguments(out(cerr), move(description), move(notes)) {}
-
-        template<typename Functor, typename... Params>
-        int run(
-                int argc, const char* const argv[],
-                Functor &&functor,
-                Params&&... params
-            )
-        {
+        bool checkArgs(int argc, const char* const argv[]) {
             bool help = false;
 
             if (argc <= 0) {
-                *output_ << "Error: argc is 0.\n";
-                return static_cast<int>(ExitStatus::USAGE);
+                throw runtime_error("argc is 0.");
             }
             else {
                 for (int index = 0; index < argc; ++index) {
                     if (argv[index] == nullptr) {
-                        *output_ << "Error: argv has null value.\n";
-                        return static_cast<int>(ExitStatus::USAGE);
+                        throw runtime_error("argv has null value.");
                     }
                     else if (argv[index] == helpOption) {
                         help = true;
@@ -265,9 +250,18 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                 }
             }
 
-            if (help) {
+            return help;
+        }
+        template<typename Functor, typename... Params>
+        ExitStatus runImpl(
+                int argc, const char* const argv[],
+                Functor &&functor,
+                Params&&... params
+        )
+        {
+            if (checkArgs(argc, argv)) {
                 displayHelp(output_, argv[0], description_, notes_);
-                return static_cast<int>(ExitStatus::OK);
+                return ExitStatus::OK;
             }
 
             set<string> optionNames;
@@ -290,7 +284,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                     if (allNames.count(currentArg) == 0) {
                         *output_<< "Error: Unknown option " << currentArg << "\n";
 
-                        return static_cast<int>(ExitStatus::USAGE);
+                        return ExitStatus::USAGE;
                     }
 
                     if (optionNames.count(currentArg)) {
@@ -299,7 +293,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                         if (index == argc) {
                             *output_<< "Error: No value supplied for option " << currentArg << "\n";
 
-                            return static_cast<int>(ExitStatus::USAGE);
+                            return ExitStatus::USAGE;
                         }
 
                         optionValues[currentArg].emplace_back(argv[index]);
@@ -313,15 +307,39 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                 }
             }
 
-            return static_cast<int>(
-                run(
-                    move(optionValues),
-                    move(positionalArgs),
-                    move(setFlags),
-                    forward<Functor>(functor),
-                    forward<Params>(params)...
-                )
+            return runImpl(
+                move(optionValues),
+                move(positionalArgs),
+                move(setFlags),
+                forward<Functor>(functor),
+                forward<Params>(params)...
             );
+        }
+    public:
+        Arguments(Out<ostream> output, string description, string notes) :
+                output_(output),
+                description_(description),
+                notes_(notes)
+        {}
+
+        // TODO: Help to cout, errors to cerr.
+        Arguments(string description, string notes) : Arguments(out(cerr), move(description), move(notes)) {}
+
+        template<typename Functor, typename... Params>
+        int run(
+                int argc, const char* const argv[],
+                Functor &&functor,
+                Params&&... params
+            )
+        {
+            try {
+                return static_cast<int>(runImpl(argc, argv, forward<Functor>(functor), forward<Params>(params)...));
+            }
+            catch (const exception& e) {
+                *output_ << "Exception: " << e.what() << "\n";
+            }
+
+            return static_cast<int>(ExitStatus::SOFTWARE);
         }
     };
 }}}}
