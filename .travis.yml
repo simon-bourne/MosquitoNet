@@ -2,8 +2,7 @@ language: cpp
 
 compiler:
   - gcc
-# clang doesn't link with boost program_options.
-#  - clang
+  - clang
 
 env:
   - BUILD_TYPE=Debug

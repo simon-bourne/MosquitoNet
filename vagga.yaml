@@ -36,3 +36,11 @@ commands:
     work-dir: .
     run: |
       build/gcc/test-harness "$@"
+  test-clang: !Command
+    description: Run tests built with clang
+    accepts-arguments: true
+    container: build
+    work-dir: .
+    run: |
+      build/clang/test-harness "$@"
+

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Enhedron/Test.h"
-#include "Enhedron/Util/Main.h"
+#include "Enhedron/CommandLine/Parameters.h"
 #include "Enhedron/Container/StringTree.h"
 
 #include <string>
@@ -10,7 +10,6 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/program_options.hpp>
 
 namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
     using std::string;
@@ -18,43 +17,17 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
     using std::vector;
     using std::runtime_error;
 
-    using boost::program_options::options_description;
     using boost::replace_all_copy;
     using boost::algorithm::is_any_of;
     using boost::algorithm::split;
 
-    using Util::ExitStatus;
-    using ::Enhedron::Util::Options;
+    using CommandLine::ExitStatus;
+    using CommandLine::Flag;
+    using CommandLine::Arguments;
 
-    using ::Enhedron::Container::StringTree;
+    using Container::StringTree;
 
-    namespace po = boost::program_options;
-
-    namespace option {
-        static constexpr const auto list = "list";
-        static constexpr const auto runTest = "run_test";
-    }
-
-    options_description buildOptions() {
-        po::options_description desc;
-
-        desc.add_options()
-                (option::list, "List tests instead of running them.")
-                (option::runTest, po::value<string>(), "Run a particular test. Overrides positional arguments for tests.")
-                ;
-
-        return move(desc);
-    }
-
-    ExitStatus runTests(Options options) {
-        vector<string> pathList;
-
-        auto optionalSpecifyTest = options.optional<string>(option::runTest);
-
-        if ( ! optionalSpecifyTest) {
-            pathList = options.getPositional<string>();
-        }
-
+    ExitStatus runTests(bool listOnly, vector<string> pathList) {
         StringTree pathTree;
 
         for (auto& path : pathList) {
@@ -76,20 +49,20 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
             childPtr->clear();
         }
 
-        if (options.flag(option::list)) {
+        if (listOnly) {
             Test::list(pathTree);
         }
         else {
             if ( ! Test::run(pathTree)) {
-                return ExitStatus::SoftwareError;
+                return ExitStatus::SOFTWARE;
             }
         }
 
-        return ExitStatus::Ok;
+        return ExitStatus::OK;
     }
 
     int run(int argc, const char* argv[]) {
-        return main(runTests, buildOptions, "TestHarness", "TEST PATH", argc, argv);
+        return Arguments("Test Harness", "").run(argc, argv, runTests, Flag("list"));
     }
 }}}}
 

@@ -10,6 +10,7 @@
 #include <iterator>
 #include <stdexcept>
 #include <utility>
+#include <iostream>
 
 #include <experimental/optional>
 
@@ -28,6 +29,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
     using std::logic_error;
     using std::index_sequence_for;
     using std::forward;
+    using std::cerr;
 
     enum class ExitStatus {
         OK,
@@ -125,7 +127,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                 Functor&& functor,
                 Option<string>&& param,
                 ParamTail&&... paramTail
-            )
+        )
         {
             vector<string> paramValues;
 
@@ -147,9 +149,38 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                     move(positionalArgs),
                     move(setFlags),
                     bindFirst(
-                        forward<Functor>(functor),
-                        move(paramValues.front()),
-                        index_sequence_for<Option<string>, ParamTail...>()
+                            forward<Functor>(functor),
+                            move(paramValues.front()),
+                            index_sequence_for<Option<string>, ParamTail...>()
+                    ),
+                    forward<ParamTail>(paramTail)...
+            );
+        }
+
+        template<typename Functor, typename... ParamTail>
+        ExitStatus run(
+                map<string, vector<string>> optionValues,
+                vector<string> positionalArgs,
+                set<string> setFlags,
+                Functor&& functor,
+                Flag&& flag,
+                ParamTail&&... paramTail
+        )
+        {
+            bool flagValue = false;
+
+            flag.forEachName([&] (const string& name) {
+                flagValue = setFlags.count(name) > 0;
+            });
+
+            return run(
+                    move(optionValues),
+                    move(positionalArgs),
+                    move(setFlags),
+                    bindFirst(
+                            forward<Functor>(functor),
+                            flagValue,
+                            index_sequence_for<Flag, ParamTail...>()
                     ),
                     forward<ParamTail>(paramTail)...
             );
@@ -205,6 +236,9 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                 description_(description),
                 notes_(notes)
         {}
+
+        // TODO: Help to cout, errors to cerr.
+        Arguments(string description, string notes) : Arguments(out(cerr), move(description), move(notes)) {}
 
         template<typename Functor, typename... Params>
         int run(
@@ -296,4 +330,5 @@ namespace Enhedron { namespace CommandLine {
     using Impl::Impl_Parameters::ExitStatus;
     using Impl::Impl_Parameters::Arguments;
     using Impl::Impl_Parameters::Option;
+    using Impl::Impl_Parameters::Flag;
 }}

@@ -64,18 +64,24 @@ namespace Enhedron { namespace Impl_TestCommandLine {
          }),
 
          simple("StringArgs", [] (Check& check) {
-             const char* argv[] = { "exeName", "--string", "xyz" };
+             const char* argv[] = { "exeName", "--string2", "abc", "--string", "xyz" };
              ostringstream output;
 
-             Arguments(out(output), "", "").run(
-                     3, argv,
-                     [&](const string& arg, vector<string> positional) {
-                         check(VAL(arg) == "xyz");
-                         check(VAL(positional.size()) == 0u);
-                         return ExitStatus::OK;
-                     },
-                     Option<string>("string")
+             auto exitStatus = Arguments(out(output), "", "").run(
+                 5, argv,
+                 [&](const string& arg, const string& arg1, vector<string> positional) {
+                     check(VAL(arg) == "xyz");
+                     check(VAL(arg1) == "abc");
+                     check(VAL(positional.size()) == 0u);
+
+                     return ExitStatus::OK;
+                 },
+                 Option<string>("string"),
+                 Option<string>("string2")
              );
+
+             check(VAL(output.str()) == "");
+             check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
          })
     );
 }}
