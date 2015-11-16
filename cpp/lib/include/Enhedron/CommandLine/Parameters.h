@@ -255,7 +255,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
             }
             else {
                 for (int index = 0; index < argc; ++index) {
-                    if (!argv[index]) {
+                    if (argv[index] == nullptr) {
                         *output_ << "Error: argv has null value.\n";
                         return static_cast<int>(ExitStatus::USAGE);
                     }
