@@ -11,7 +11,6 @@ namespace Enhedron { namespace Impl_TestCommandLine {
     using namespace CommandLine;
     using namespace Test;
 
-    using std::initializer_list;
     using std::ostringstream;
     using std::vector;
     using std::string;
