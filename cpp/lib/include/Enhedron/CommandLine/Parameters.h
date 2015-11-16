@@ -249,6 +249,10 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
         {
             bool help = false;
 
+            for (int index = 0; index < argc; ++index) {
+                cerr << "X" << argv[index] << "X" << std::endl;
+            }
+
             if (argc <= 0) {
                 *output_ << "Error: argc is 0.\n";
                 return static_cast<int>(ExitStatus::USAGE);
