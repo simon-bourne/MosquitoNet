@@ -475,10 +475,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
     template<typename Functor, typename... Args>
     unique_ptr<Context> simple(string name, Functor runTest, Args&&... args) {
-        return make_unique<Runner<RunSimple<Functor, DecayArray_t< Args>...>, DecayArray_t< Args>...>>(
+        return make_unique<Runner<RunSimple<Functor, DecayArray_t<Args>...>, DecayArray_t<Args>...>>(
                 move(name),
-                RunSimple<Functor, DecayArray_t< Args>...>(runTest),
-                forward<DecayArray_t< Args>>(args)...
+                RunSimple<Functor, DecayArray_t<Args>...>(runTest),
+                forward<DecayArray_t<Args>>(args)...
             );
     }
 
