@@ -2,11 +2,11 @@ dist: trusty
 language: cpp
 
 compiler:
-  #- gcc
+  - gcc
   - clang
 
 env:
-  #- BUILD_TYPE=Debug
+  - BUILD_TYPE=Debug
   - BUILD_TYPE=Release
 
 install:
