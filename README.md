@@ -91,7 +91,8 @@ check(VAL(sum3)(a, b, c) == 7); // This will fail with the message:
     //    sum3 = function: in file /path/to/file.cpp, line 5
 ```
 
-You'll need to have an `operator<<` or specialize `Enhedron::Assertion::Convert` to be able to print the types.
+For each argument type, you'll need to have an `operator<<` or specialize `Enhedron::Assertion::Convert` to be able to 
+print the values.
 
 You can also have more complex expressions and add context expressions to give more detail on the output:
 
