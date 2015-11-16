@@ -10,7 +10,7 @@ env:
   - BUILD_TYPE=Release
 
 install:
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/ppa -y
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
   - wget -O - http://llvm.org/apt/llvm-snapshot.gpg.key | sudo apt-key add -
   - sudo add-apt-repository 'deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.6 main' -y
   - sudo apt-get update -qq
