@@ -1,5 +1,6 @@
 #include "Enhedron/Util.h"
 #include "Enhedron/Util/MetaProgramming.h"
+#include "Enhedron/Util/Optional.h"
 
 #include <string>
 #include <ostream>
@@ -12,14 +13,12 @@
 #include <utility>
 #include <iostream>
 
-#include <experimental/optional>
-
 namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Parameters {
     using Util::bindFirst;
+    using Util::optional;
 
     using std::string;
     using std::ostream;
-    using std::experimental::optional;
     using std::vector;
     using std::set;
     using std::map;
