@@ -8,18 +8,12 @@
 #include <vector>
 #include <utility>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/replace.hpp>
-
 namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
     using std::string;
     using std::move;
     using std::vector;
     using std::runtime_error;
-
-    using boost::replace_all_copy;
-    using boost::algorithm::is_any_of;
-    using boost::algorithm::split;
+    using std::find;
 
     using CommandLine::ExitStatus;
     using CommandLine::Flag;
@@ -32,7 +26,21 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
 
         for (auto& path : pathList) {
             vector<string> pathComponentList;
-            split(pathComponentList, path, is_any_of("."));
+            auto posDot = path.begin();
+
+            while (true) {
+                auto end = find(posDot, path.end(), '.');
+
+                pathComponentList.emplace_back(posDot, end);
+
+                if (end == path.end()) {
+                    break;
+                }
+
+                posDot = end;
+                ++posDot;
+            }
+
             auto childPtr = out(pathTree);
 
             for (const auto& pathComponent : pathComponentList) {

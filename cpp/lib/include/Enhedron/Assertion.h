@@ -14,13 +14,13 @@ namespace Enhedron { namespace Impl { namespace Assertion {
 
     template<typename Expression, typename... ContextVariableList>
     void Assert(Expression &&expression, ContextVariableList &&... contextVariableList) {
-        CheckWithFailureHandler<LogFailureHandler<TerminateInDebug>>(move(expression),
+        CheckWithFailureHandler<CoutFailureHandler<TerminateInDebug>>(move(expression),
                                                                      move(contextVariableList)...);
     }
 
     template<typename Exception, typename Expression, typename... ContextVariableList>
     void AssertThrows(Expression &&expression, ContextVariableList &&... contextVariableList) {
-        CheckThrowsWithFailureHandler<LogFailureHandler<TerminateInDebug>, Exception>(move(expression),
+        CheckThrowsWithFailureHandler<CoutFailureHandler<TerminateInDebug>, Exception>(move(expression),
                                                                                       move(contextVariableList)...);
     }
 }}}

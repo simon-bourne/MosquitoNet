@@ -9,7 +9,7 @@
 #include <map>
 #include <utility>
 
-#include <boost/optional/optional.hpp>
+#include "Enhedron/Util/Optional.h"
 
 namespace Enhedron { namespace Container { namespace Impl { namespace StringTree {
     using std::map;
@@ -18,8 +18,8 @@ namespace Enhedron { namespace Container { namespace Impl { namespace StringTree
     using std::unique_ptr;
     using std::make_unique;
 
-    using boost::optional;
-    using boost::none;
+    using Util::optional;
+    using Util::none;
 
     class StringTree final: public NoCopy {
     public:

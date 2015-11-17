@@ -2,6 +2,7 @@
 
 #include "Enhedron/Test.h"
 #include "Enhedron/Assertion.h"
+#include "Enhedron/Util/Optional.h"
 
 #include <utility>
 #include <string>
@@ -9,8 +10,6 @@
 #include <stdexcept>
 #include <functional>
 #include <algorithm>
-
-#include <boost/optional.hpp>
 
 namespace Enhedron {
     using Test::context;
@@ -29,7 +28,7 @@ namespace Enhedron {
     using std::reference_wrapper;
     using std::count;
 
-    using boost::optional;
+    using Util::optional;
 
     using namespace Assertion;
 
@@ -104,7 +103,6 @@ namespace Enhedron {
         }
 
         MoveTracker& operator=(MoveTracker&& source) {
-            assert(this != &source);
             moved_ = source.moved_;
             source.moved_ = true;
 

@@ -4,15 +4,13 @@
 
 #include "Enhedron/Util.h"
 #include "Enhedron/Util/MetaProgramming.h"
-#include "Enhedron/Log.h"
 #include "Enhedron/Util/Enum.h"
 #include "Enhedron/Assertion/Configurable.h"
 #include "Enhedron/Assertion.h"
-#include "Enhedron/Test/Module.h"
 #include "Enhedron/Test/Results.h"
 #include "Enhedron/Container/StringTree.h"
 
-#include <boost/optional/optional.hpp>
+#include "Enhedron/Util/Optional.h"
 
 #include <functional>
 #include <memory>
@@ -33,7 +31,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using Util::DecayArray_t;
     using Util::bindFirst;
 
-    using boost::optional;
+    using Util::optional;
 
     using std::forward;
     using std::vector;
@@ -50,6 +48,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using std::remove_reference;
     using std::bind;
     using std::ref;
+    using std::runtime_error;
     using std::cout;
 
     class Stats {
@@ -195,7 +194,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     };
 
     class Check : public NoCopy {
-        using FailureHandler = LogFailureHandler<NullAction>;
+        using FailureHandler = CoutFailureHandler<NullAction>;
 
         struct Status {
             bool failed;
@@ -266,7 +265,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 ContextVariableList... contextVariableList
         )
         {
-            auto ok = CheckWithFailureHandler<LogFailureHandler<NullAction>>(
+            auto ok = CheckWithFailureHandler<FailureHandler>(
                     move(expression),
                     move(contextVariableList)...
             );
@@ -331,7 +330,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     };
 
     inline void throwOnFailure(const Check& checker, const string& name, Out<ResultTest> results) {
-        log.raiseIf(checker.logChecks(name, results), "checkFailed");
+        if (checker.logChecks(name, results)) {
+            throw runtime_error("checkFailed");
+        }
     }
 
     enum class Tag {

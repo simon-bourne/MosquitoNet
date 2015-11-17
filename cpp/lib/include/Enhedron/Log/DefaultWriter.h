@@ -12,7 +12,6 @@
 
 #include "Enhedron/Util.h"
 #include "Enhedron/Util/Json.h"
-#include "Enhedron/Log/Types.h"
 
 namespace Enhedron { namespace Log { namespace Impl { namespace DefaultWriter {
     using std::string;

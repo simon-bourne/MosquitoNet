@@ -203,10 +203,6 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
             *outputStream_ << "OK: " << passed << endl;
         }
-    private:
-        Finally logBlock(const char* type, const string& name) {
-            return Finally::wrap(log.infoBlock(type, "name", name));
-        }
     };
 }}}}
 
