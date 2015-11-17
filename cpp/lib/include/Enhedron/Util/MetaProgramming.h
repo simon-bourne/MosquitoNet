@@ -78,11 +78,6 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
     };
 
     template<typename T>
-    struct DecayArray<T, enable_if_t<is_function<remove_reference_t<T>>::value>> {
-        using type = typename std::reference_wrapper<remove_reference_t<T>>::type;
-    };
-
-    template<typename T>
     using DecayArray_t = typename DecayArray<T>::type;
 
     template<typename... Args>

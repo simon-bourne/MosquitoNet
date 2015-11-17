@@ -8,6 +8,7 @@
 #include <vector>
 #include <stdexcept>
 #include <functional>
+#include <algorithm>
 
 #include <boost/optional.hpp>
 
@@ -19,16 +20,36 @@ namespace Enhedron {
     using std::string;
     using std::vector;
     using std::move;
+    using std::forward;
     using std::exception;
     using std::runtime_error;
     using std::logical_and;
     using std::logic_error;
     using std::is_same;
     using std::reference_wrapper;
+    using std::count;
 
     using boost::optional;
 
     using namespace Assertion;
+
+    namespace Assertion {
+        template<typename T>
+        struct Convert<vector<T>> {
+            static inline string toString(const vector<T>& value) {
+                string result("[");
+
+                for (const auto& element : value) {
+                    result += Convert<T>::toString(element);
+                    result += ", ";
+                }
+
+                result += "]";
+
+                return result;
+            }
+        };
+    }
 
     class FailureHandler {
     public:
@@ -200,6 +221,32 @@ namespace Enhedron {
         return x + y + z;
     }
 
+    int overloaded(int x) {
+        return x;
+    }
+
+    double overloaded(double x) {
+        return x + 1.0;
+    }
+
+    struct Overloaded {
+        template<typename... Args>
+        auto operator()(Args&&... args) const {
+            return overloaded(forward<Args>(args)...);
+        }
+    };
+
+    static const Overloaded overloadedProxy{};
+
+    struct Count {
+        template<typename Container, typename Value>
+        auto operator()(const Container& container, Value&& value) const {
+            return count(container.begin(), container.end(), forward<Value>(value));
+        }
+    };
+
+    static const Count countProxy{};
+
     int id(int x) { return x; }
 
     static Test::Suite s("Assert",
@@ -213,6 +260,17 @@ namespace Enhedron {
             expectFailure(check, VAL(false), "false");
             expectFailure(check, VAL(false) || VAL(false), "(false || false)");
             expectFailure(check, VAL(sum3)(1, 2, 3) == 7, "(sum3(1, 2, 3) == 7)");
+        }),
+        simple("Overloaded", [] (Check& check) {
+            check(VAL(overloadedProxy)(1) == overloaded(1));
+            check(VAL(overloadedProxy)(1.0) == overloaded(1.0));
+            expectFailure(check, VAL(overloadedProxy)(1) == 2, "(overloadedProxy(1) == 2)");
+        }),
+        simple("Template", [] (Check& check) {
+            vector<int> intVec{1,2,3};
+            check(VAL(countProxy)(intVec, 1) == 1);
+            check(VAL(countProxy)(intVec, 0) == 0);
+            expectFailure(check, VAL(countProxy)(intVec, 0) == 1, "(countProxy([1, 2, 3, ], 0) == 1)");
         }),
         simple("ValueSemantics", [] (Check& check) {
             MoveTracker moveTracker;
