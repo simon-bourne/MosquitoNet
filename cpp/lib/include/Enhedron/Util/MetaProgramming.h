@@ -28,7 +28,8 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
     using std::forward;
     using std::get;
     using std::remove_reference_t;
-    using std::remove_extent;
+    using std::remove_extent_t;
+    using std::conditional_t;
     using std::is_array;
     using std::is_function;
     using std::enable_if_t;
@@ -68,14 +69,11 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
         );
     }
 
-    template<typename T, typename Enable = void>
-    struct DecayArray {
-        using type = T;
-    };
-
     template<typename T>
-    struct DecayArray<T, enable_if_t<is_array<remove_reference_t<T>>::value>> {
-        using type = remove_reference_t<typename remove_extent<remove_reference_t<T>>::type*>;
+    class DecayArray {
+    public:
+        using U = remove_reference_t<T>;
+        using type = conditional_t<is_array<U>::value, remove_extent_t<U>*, T>;
     };
 
     template<typename T>
