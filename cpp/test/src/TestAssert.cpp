@@ -325,20 +325,20 @@ namespace Enhedron {
             );
         }),
         simple("ThrowSucceeds", [] (Check& check) {
-            testAssertThrows<exception>(VAL([] { throw runtime_error("test"); }));
-            testAssertThrows<runtime_error>(VAL([] { throw runtime_error("test"); }));
+            testAssertThrows<exception>(VAL([] { throw runtime_error("test"); })());
+            testAssertThrows<runtime_error>(VAL([] { throw runtime_error("test"); })());
         }),
         simple("ThrowFails", [] (Check& check) {
             expectException<logic_error>(
                     check,
-                    VAL([] { throw runtime_error("test"); }),
-                    "[] { throw runtime_error(\"test\"); }"
+                    VAL([] { throw runtime_error("test"); })(),
+                    "[] { throw runtime_error(\"test\"); }()"
                 );
 
             expectException<runtime_error>(
                     check,
-                    VAL([] {} ),
-                    "[] {}"
+                    VAL([] {} )(),
+                    "[] {}()"
             );
 
         }),
