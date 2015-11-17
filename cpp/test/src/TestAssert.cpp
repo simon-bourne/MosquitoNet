@@ -38,10 +38,15 @@ namespace Enhedron {
         struct Convert<vector<T>> {
             static inline string toString(const vector<T>& value) {
                 string result("[");
+                bool isFirst = true;
 
                 for (const auto& element : value) {
+                    if ( ! isFirst) {
+                        result += ", ";
+                    }
+
+                    isFirst = false;
                     result += Convert<T>::toString(element);
-                    result += ", ";
                 }
 
                 result += "]";
@@ -267,10 +272,10 @@ namespace Enhedron {
             expectFailure(check, VAL(overloadedProxy)(1) == 2, "(overloadedProxy(1) == 2)");
         }),
         simple("Template", [] (Check& check) {
-            vector<int> intVec{1,2,3};
+            vector<int> intVec{ 1, 2, 3 };
             check(VAL(countProxy)(intVec, 1) == 1);
             check(VAL(countProxy)(intVec, 0) == 0);
-            expectFailure(check, VAL(countProxy)(intVec, 0) == 1, "(countProxy([1, 2, 3, ], 0) == 1)");
+            expectFailure(check, VAL(countProxy)(intVec, 0) == 1, "(countProxy([1, 2, 3], 0) == 1)");
         }),
         simple("ValueSemantics", [] (Check& check) {
             MoveTracker moveTracker;
