@@ -28,7 +28,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
     using Util::TaggedValue;
     using Util::StoreArgs;
-    using Util::DecayArray_t;
+    using Util::DecayArrayAndFunction_t;
     using Util::bindFirst;
 
     using Util::optional;
@@ -435,10 +435,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     unique_ptr<Context> gwt(string name, Args&&... args) {
         return make_unique<
                     Runner<function<Stats(
-                            DecayArray_t< Args>&&...,
+                            DecayArrayAndFunction_t< Args>&&...,
                             const string&, Out<ResultContext>
                     )>,
-                    DecayArray_t< Args>...>
+                    DecayArrayAndFunction_t< Args>...>
                 >
             (
                 move(name),
@@ -489,10 +489,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
     template<typename Functor, typename... Args>
     unique_ptr<Context> simple(string name, Functor runTest, Args&&... args) {
-        return make_unique<Runner<RunSimple<Functor, DecayArray_t<Args>...>, DecayArray_t<Args>...>>(
+        return make_unique<Runner<RunSimple<Functor, DecayArrayAndFunction_t<Args>...>, DecayArrayAndFunction_t<Args>...>>(
                 move(name),
-                RunSimple<Functor, DecayArray_t<Args>...>(runTest),
-                Forward<DecayArray_t<Args>>::run(args)...
+                RunSimple<Functor, DecayArrayAndFunction_t<Args>...>(runTest),
+                Forward<DecayArrayAndFunction_t<Args>>::run(args)...
             );
     }
 
@@ -577,7 +577,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
     template<typename... Args>
     Exhaustive<Args...> exhaustive(Args&&... args) {
-        return Exhaustive<DecayArray_t< Args>...>(forward<DecayArray_t< Args>>(args)...);
+        return Exhaustive<DecayArrayAndFunction_t< Args>...>(forward<DecayArrayAndFunction_t< Args>>(args)...);
     }
 
     inline void list(const StringTree& pathTree, Out<Results> results) {

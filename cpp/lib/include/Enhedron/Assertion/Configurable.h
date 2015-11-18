@@ -47,6 +47,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     using Util::mapTuple;
     using Util::mapParameterPack;
     using Util::extractParameterPack;
+    using Util::DecayArrayAndFunction_t;
 
     using std::enable_if_t;
     using std::is_base_of;
@@ -60,7 +61,6 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     using std::exception;
     using std::function;
     using std::pair;
-    using std::decay_t;
     using std::tuple;
     using std::tie;
     using std::add_lvalue_reference_t;
@@ -98,7 +98,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Value>
     class Literal final : public Expression {
     public:
-        using ResultType = decay_t<const Value>;
+        using ResultType = DecayArrayAndFunction_t<Value>;
 
         explicit Literal(const Value &value) : value(value) { }
 
@@ -108,7 +108,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
         void appendVariables(vector<Variable> &) const { }
 
-        ResultType evaluate() const {
+        const Value& evaluate() const {
             return value;
         }
 
@@ -119,7 +119,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Functor, typename Arg>
     class UnaryOperator final : public Expression {
     public:
-        using ResultType = decay_t<const result_of_t<Functor(typename Arg::ResultType)>>;
+        using ResultType = DecayArrayAndFunction_t<result_of_t<Functor(typename Arg::ResultType)>>;
 
         explicit UnaryOperator(const char *operatorName, Functor functor, Arg arg) : operatorName(operatorName),
                                                                                      functor(move(functor)),
@@ -149,7 +149,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Functor, typename Lhs, typename Rhs>
     class BinaryOperator final : public Expression {
     public:
-        using ResultType = decay_t<const result_of_t<Functor(
+        using ResultType = DecayArrayAndFunction_t<result_of_t<Functor(
                                 typename Lhs::ResultType,
                                 typename Rhs::ResultType)>>;
 
@@ -185,7 +185,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Functor, typename... Args>
     class Function final : public Expression {
     public:
-        using ResultType = decay_t<const result_of_t<Functor&(Args...)>>;
+        using ResultType = DecayArrayAndFunction_t<result_of_t<Functor&(Args...)>>;
 
         explicit Function(const char *name, Functor&& functor, const char *file, int line, Args&&... args) :
                 name(name),
@@ -247,7 +247,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Value>
     class VariableRefExpression final : public Expression {
     public:
-        using ResultType = decay_t<const Value>;
+        using ResultType = DecayArrayAndFunction_t<Value>;
 
         explicit VariableRefExpression(const char *variableName, const Value& value, const char *file, int line) :
                 variableName(variableName),
@@ -284,7 +284,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Value>
     class VariableValueExpression final : public Expression {
     public:
-        using ResultType = decay_t<const Value>;
+        using ResultType = DecayArrayAndFunction_t<Value>;
 
         explicit VariableValueExpression(const char *variableName, Value&& value, const char *file, int line) :
                 variableName(variableName),
@@ -530,7 +530,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
             return false;
         }
-        catch (const exception &e) {
+        catch (const exception&) {
             // Expected
         }
 
