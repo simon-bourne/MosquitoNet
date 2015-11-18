@@ -3,9 +3,16 @@
 #pragma once
 
 #include <string>
+#include <sstream>
+#include <iomanip>
+#include <ios>
 
 namespace Enhedron { namespace Util { namespace Impl { namespace Json {
     using std::string;
+    using std::ostringstream;
+    using std::setfill;
+    using std::setw;
+    using std::hex;
 
     inline string jsonEscape(const string& input) {
         string escapedString;
@@ -43,9 +50,9 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Json {
                     break;
                 default:
                     if (c < 0x20) {
-                        char escapedChar[10]; // Should only ever need 7.
-                        sprintf(escapedChar, "\\u00%02x", static_cast<unsigned int>(c));
-                        escapedString.append(escapedChar);
+                        ostringstream escapeCode;
+                        escapeCode << "\\u" << setw(4) << setfill('0') << hex << static_cast<unsigned int>(c);
+                        escapedString.append(escapeCode.str());
                     }
                     else {
                         escapedString += c;

@@ -84,26 +84,26 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
         tuple<remove_reference_t<Args>...> args;
 
         template <typename Functor, size_t... indices, typename... ExtraArgs>
-        void applyExtraBeforeImpl(Functor&& functor, index_sequence<indices...>, ExtraArgs&&... extraArgs) {
-            functor(forward<ExtraArgs>(extraArgs)..., forward<Args>(get<indices>(args))...);
+        auto applyExtraBeforeImpl(Functor&& functor, index_sequence<indices...>, ExtraArgs&&... extraArgs) {
+            return functor(forward<ExtraArgs>(extraArgs)..., forward<Args>(get<indices>(args))...);
         }
 
         template <typename Functor, size_t... indices, typename... ExtraArgs>
-        void applyExtraAfterImpl(Functor&& functor, index_sequence<indices...>, ExtraArgs&&... extraArgs) {
-            functor(forward<Args>(get<indices>(args))..., forward<ExtraArgs>(extraArgs)...);
+        auto applyExtraAfterImpl(Functor&& functor, index_sequence<indices...>, ExtraArgs&&... extraArgs) {
+            return functor(forward<Args>(get<indices>(args))..., forward<ExtraArgs>(extraArgs)...);
         }
     public:
         // RValue reference arguments will be moved into this container. Everything else will be copied.
         StoreArgs(Args&&... args) : args(forward<Args>(args)...) { }
 
         template <typename Functor>
-        void apply(Functor&& functor) {
-            extractParameterPack(forward<Functor>(functor), forward<Args>(args)...);
+        auto apply(Functor&& functor) {
+            return extractParameterPack(forward<Functor>(functor), forward<Args>(args)...);
         }
 
         template <typename Functor, typename... ExtraArgs>
-        void applyExtraBefore(Functor&& functor, ExtraArgs&&... extraArgs) {
-            applyExtraBeforeImpl(
+        auto applyExtraBefore(Functor&& functor, ExtraArgs&&... extraArgs) {
+            return applyExtraBeforeImpl(
                     forward<Functor>(functor),
                     index_sequence_for<Args...>(),
                     forward<ExtraArgs>(extraArgs)...
@@ -111,8 +111,8 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
         }
 
         template <typename Functor, typename... ExtraArgs>
-        void applyExtraAfter(Functor&& functor, ExtraArgs&&... extraArgs) {
-            applyExtraAfterImpl(
+        auto applyExtraAfter(Functor&& functor, ExtraArgs&&... extraArgs) {
+            return applyExtraAfterImpl(
                     forward<Functor>(functor),
                     index_sequence_for<Args...>(),
                     forward<ExtraArgs>(extraArgs)...

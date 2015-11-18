@@ -203,7 +203,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
         vector<Status> statusList;
 
-        friend void throwOnFailure(const Check& checker, const string& name, Out<ResultTest> results);
+        friend Stats logFailures(const Check& checker, const string& name, Out<ResultTest> results);
 
         bool logChecks(const string& name, Out<ResultTest> results) const {
             bool failed = false;
@@ -329,10 +329,12 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         }
     };
 
-    inline void throwOnFailure(const Check& checker, const string& name, Out<ResultTest> results) {
+    inline Stats logFailures(const Check& checker, const string& name, Out<ResultTest> results) {
         if (checker.logChecks(name, results)) {
-            throw runtime_error("checkFailed");
+            return Stats::fail();
         }
+        
+        return Stats::ok();
     }
 
     enum class Tag {
@@ -346,7 +348,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using Then = TaggedValue<Tag, Tag::Then, string>;
 
     template<typename TestClass, typename... Args>
-    void runGwt(const string& name, Out<ResultContext> results, Args&&... args);
+    Stats runGwt(const string& name, Out<ResultContext> results, Args&&... args);
 
     class GWT: public NoCopy {
         Given givenText;
@@ -355,7 +357,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         Check checker;
 
         template<typename TestClass, typename... Args>
-        friend void runGwt(const string& name, Out<ResultContext> results, Args&&... args);
+        friend Stats runGwt(const string& name, Out<ResultContext> results, Args&&... args);
     public:
         GWT(Given given, When when, Then then) :
             givenText(move(given)), whenText(move(when)), thenText(move(then)) {}
@@ -375,7 +377,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     };
 
     template<typename TestClass, typename... Args>
-    void runGwt(const string& name, Out<ResultContext> results, Args&&... args) {
+    Stats runGwt(const string& name, Out<ResultContext> results, Args&&... args) {
         auto gwtResults(results->gwtTest(name));
         auto given(gwtResults->init());
         TestClass test{forward<Args>(args)...};
@@ -398,7 +400,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             test.checker.addException(e);
         }
 
-        throwOnFailure(test.checker, name, out(*gwtResults));
+        return logFailures(test.checker, name, out(*gwtResults));
     }
 
     template<typename Functor, typename... Args>
@@ -425,22 +427,14 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         virtual Stats run(const StringTree& pathTree, Out<ResultContext> results) override {
             if ( ! included(pathTree)) return Stats{};
 
-            try {
-                args.applyExtraBefore(runTest, name, results);
-
-                return Stats::ok();
-            }
-            catch (const exception& e) {
-            }
-
-            return Stats::fail();
+            return args.applyExtraBefore(runTest, name, results);
         }
     };
 
     template<typename TestClass, typename... Args>
     unique_ptr<Context> gwt(string name, Args&&... args) {
         return make_unique<
-                    Runner<function<void(
+                    Runner<function<Stats(
                             DecayArray_t< Args>&&...,
                             const string&, Out<ResultContext>
                     )>,
@@ -459,7 +453,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     public:
         RunSimple(Functor runTest) : runTest(move(runTest)) {}
 
-        void operator()(const string& name, Out<ResultContext> results, Args&&... args) {
+        Stats operator()(const string& name, Out<ResultContext> results, Args&&... args) {
             auto test = results->simpleTest(name);
             Check check;
 
@@ -470,7 +464,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 check.addException(e);
             }
 
-            throwOnFailure(check, name, out(*test));
+            return logFailures(check, name, out(*test));
         }
     };
 
@@ -541,7 +535,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     public:
         RunExhaustive(Functor runTest, StoreArgs<Args...> args) : runTest(move(runTest)), args(move(args)) {}
 
-        void operator()(const string& name, Out<ResultContext> results) {
+        Stats operator()(const string& name, Out<ResultContext> results) {
             auto test = results->simpleTest(name);
             Check check;
 
@@ -552,7 +546,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 check.addException(e);
             }
 
-            throwOnFailure(check, name, out(*test));
+            return logFailures(check, name, out(*test));
         }
     };
 
