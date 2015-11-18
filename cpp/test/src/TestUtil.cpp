@@ -65,30 +65,30 @@ namespace Enhedron {
             check(VAL(jsonEscape("prefix\u0010postfix")) == "prefix\\u0010postfix");
             check(VAL(jsonEscape("prefix\tpostfix")) == "prefix\\tpostfix");
         }),
-        exhaustive(
-                escapedPairs,
-                choice("", "prefix"),
-                choice("", "postfix")
-            ).
-            simple("jsonEscapingCombo", [] (
-                        Check& check,
-                        pair<char, char> c,
-                        const string& prefix,
-                        const string& postfix
-                    )
-                {
-                    string input(prefix);
-                    input += c.first;
-                    input += postfix;
-
-                    string result(prefix);
-                    result += '\\';
-                    result += c.second;
-                    result += postfix;
-
-                    check(VAL(jsonEscape(input)) == result);
-                }
-        ),
+//        exhaustive(
+//                escapedPairs,
+//                choice("", "prefix"),
+//                choice("", "postfix")
+//            ).
+//            simple("jsonEscapingCombo", [] (
+//                        Check& check,
+//                        pair<char, char> c,
+//                        const string& prefix,
+//                        const string& postfix
+//                    )
+//                {
+//                    string input(prefix);
+//                    input += c.first;
+//                    input += postfix;
+//
+//                    string result(prefix);
+//                    result += '\\';
+//                    result += c.second;
+//                    result += postfix;
+//
+//                    check(VAL(jsonEscape(input)) == result);
+//                }
+//        ),
         context("math",
             simple("divideRoundingUp", [] (Check& check) {
                 check(VAL(divideRoundingUp(0u, 10u)) == 0u);
