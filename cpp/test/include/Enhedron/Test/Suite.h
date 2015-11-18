@@ -474,12 +474,31 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         }
     };
 
+    // Workaround for MSVC bug. We should be able to use std forward, but it doesn't work for decayed arrays.
+    template<typename T>
+    struct Forward {
+        static constexpr T&& run( typename std::remove_reference<T>::type& t ) {
+            return std::forward<T>(t);
+        }
+
+        static constexpr T&& run( typename std::remove_reference<T>::type&& t ) {
+            return std::forward<T>(t);
+        }
+    };
+
+    template<typename T>
+    struct Forward<T*> {
+        static T* run(T* t ) {
+            return t;
+        }
+    };
+
     template<typename Functor, typename... Args>
     unique_ptr<Context> simple(string name, Functor runTest, Args&&... args) {
         return make_unique<Runner<RunSimple<Functor, DecayArray_t<Args>...>, DecayArray_t<Args>...>>(
                 move(name),
                 RunSimple<Functor, DecayArray_t<Args>...>(runTest),
-                forward<DecayArray_t<Args>>(args)...
+                Forward<DecayArray_t<Args>>::run(args)...
             );
     }
 
