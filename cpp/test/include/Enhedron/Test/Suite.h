@@ -453,6 +453,13 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     public:
         RunSimple(Functor runTest) : runTest(move(runTest)) {}
 
+        // Visual C++ 2015 seems to generate a dodgy move constructor here.
+        RunSimple(RunSimple&& other) : runTest(move(other.runTest)) {}
+
+        RunSimple operator=(RunSimple&& other) {
+            runTest = move(other.runTest);
+        }
+
         Stats operator()(const string& name, Out<ResultContext> results, Args&&... args) {
             auto test = results->simpleTest(name);
             Check check;
