@@ -249,7 +249,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     public:
         using ResultType = DecayArrayAndFunction_t<Value>;
 
-        explicit VariableRefExpression(const char *variableName, const Value& value, const char *file, int line) :
+        explicit VariableRefExpression(const char *variableName, Value& value, const char *file, int line) :
                 variableName(variableName),
                 value(value),
                 file(file),
@@ -276,7 +276,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
     private:
         const char *variableName;
-        const Value& value;
+        Value& value;
         const char *file;
         int line;
     };
@@ -316,11 +316,6 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         const char *file;
         int line;
     };
-
-    template<typename Value>
-    auto makeVariable(const char *name, const Value& value, const char *file, int line) {
-        return VariableRefExpression<const Value>(name, value, file, line);
-    }
 
     template<typename Value>
     auto makeVariable(const char *name, Value& value, const char *file, int line) {

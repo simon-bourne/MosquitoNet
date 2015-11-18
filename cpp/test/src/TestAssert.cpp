@@ -289,6 +289,9 @@ namespace Enhedron {
             int b = 1;
             check("We don't store refs to temporaries", VAL(a + b) == 2);
 
+            const int c = 1;
+            check("Const is preserved on lvalue refs", VAL(c) == 1);
+
             namespace Conf = Assertion::Impl::Configurable;
 
             static_assert(
