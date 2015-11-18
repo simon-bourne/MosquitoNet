@@ -16,8 +16,32 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_Optional {
     template<typename Value>
     class optional final {
         unique_ptr<Value> value_;
+
+        template<typename Other>
+        friend class optional;
     public:
         optional() = default;
+
+        optional(const optional<Value>& other) {
+            if (bool(other)) {
+                value_ = make_unique<Value>(*other.value_);
+            }
+            else {
+                value_.reset();
+            }
+        }
+
+        optional<Value>& operator=(const optional<Value>& other) {
+            if (bool(other)) {
+                value_ = make_unique<Value>(*other.value_);
+            }
+            else {
+                value_.reset();
+            }
+
+            return *this;
+        }
+
         optional(Value&& value) : value_(make_unique<Value>(forward<Value>(value))) {}
         optional(None) {}
 

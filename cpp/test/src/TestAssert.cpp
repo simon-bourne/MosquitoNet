@@ -335,7 +335,7 @@ namespace Enhedron {
             expectException<logic_error>(
                     check,
                     VAL([] { throw runtime_error("test"); })(),
-                    "[] { throw runtime_error(\"test\"); }()"
+                    "[] { throw runtime_error(\"test\"); }() threw \"test\""
                 );
 
             expectException<runtime_error>(

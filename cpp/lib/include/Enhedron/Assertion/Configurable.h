@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Enhedron/Util/MetaProgramming.h"
+#include "Enhedron/Util/Optional.h"
 
 #include <type_traits>
 #include <sstream>
@@ -48,6 +49,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     using Util::mapParameterPack;
     using Util::extractParameterPack;
     using Util::DecayArrayAndFunction_t;
+    using Util::optional;
 
     using std::enable_if_t;
     using std::is_base_of;
@@ -206,6 +208,10 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             );
             valueString << ")";
 
+            if (exceptionMessage) {
+                valueString << " threw \"" << *exceptionMessage << "\"";
+            }
+
             return valueString.str();
         }
 
@@ -219,6 +225,10 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
                 },
                 args
             );
+        }
+
+        void setException(const exception& e) {
+            exceptionMessage = optional<string>(e.what());
         }
     private:
         template<typename Arg1, typename Arg2, typename... Tail>
@@ -241,6 +251,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         Functor functor;
         const char* file;
         int line;
+        optional<string> exceptionMessage;
         tuple<Args...> args;
     };
 
@@ -535,21 +546,23 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<
             typename FailureHandler,
             typename Exception,
-            typename Expression,
+            typename Functor,
+            typename... Args,
             typename... ContextVariableList,
             enable_if_t<!is_same<Exception, exception>::value> * = nullptr
     >
-    bool CheckThrowsWithFailureHandler(Expression expression, ContextVariableList... contextVariableList) {
+    bool CheckThrowsWithFailureHandler(Function<Functor, Args...> expression, ContextVariableList... contextVariableList) {
         try {
             expression.evaluate();
             ProcessFailure<FailureHandler>(move(expression), move(contextVariableList)...);
 
             return false;
         }
-        catch (const Exception &e) {
+        catch (const Exception&) {
             // Expected
         }
         catch (const exception &e) {
+            expression.setException(e);
             ProcessFailure<FailureHandler>(move(expression), move(contextVariableList)...);
 
             return false;
