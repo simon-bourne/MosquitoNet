@@ -1,6 +1,6 @@
 # MosquitoNet
 
-Linux: [![Linux build Status](https://travis-ci.org/simon-bourne/MosquitoNet.png)](https://travis-ci.org/simon-bourne/MosquitoNet)
+Linux: [![Linux build Status](https://travis-ci.org/simon-bourne/MosquitoNet.svg)](https://travis-ci.org/simon-bourne/MosquitoNet)
 
 Windows: [![Windows build status](https://ci.appveyor.com/api/projects/status/af79g9qw0u90c6qf?svg=true)](https://ci.appveyor.com/project/simon-bourne/mosquitonet)
 
