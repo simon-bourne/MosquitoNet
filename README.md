@@ -4,8 +4,8 @@ Linux: [![Linux build Status](https://travis-ci.org/simon-bourne/MosquitoNet.svg
 
 Windows: [![Windows build status](https://ci.appveyor.com/api/projects/status/af79g9qw0u90c6qf?svg=true)](https://ci.appveyor.com/project/simon-bourne/mosquitonet)
 
-This is currently under active development. If it looks interesting to you, but there's a feature or improvement you'd
-like, please create an issue.
+This is currently under heavy development and the API is subject to change. If it looks interesting to you, but there's
+a feature or improvement you'd like, please create an issue.
 
 ## Features
 

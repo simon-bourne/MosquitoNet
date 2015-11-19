@@ -45,7 +45,7 @@ namespace Enhedron { namespace Log { namespace Impl { namespace Logger {
 
     private:
         static atomic<Level::Id>& getLevelId() {
-            static atomic<Level::Id> levelId;
+            static atomic<Level::Id> levelId(Level::info().getId());
             return levelId;
         }
     };
