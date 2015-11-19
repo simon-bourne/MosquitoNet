@@ -19,7 +19,7 @@ install:
 
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew tap homebrew/versions; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install gcc49 || brew link --overwrite gcc49 fi
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install gcc49 || brew link --overwrite gcc49; fi
 
 script:
 - mkdir -p build
