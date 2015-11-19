@@ -232,16 +232,11 @@ namespace Enhedron {
         return x + 1.0;
     }
 
-    static const auto overloadedProxy = [] (auto... args) { return overloaded(args...); };
+    static const auto overloadedProxy = [] (auto&&... args) { return overloaded(forward<decltype(args)>(args)...); };
 
-    struct Count {
-        template<typename Container, typename Value>
-        auto operator()(const Container& container, Value&& value) const {
-            return count(container.begin(), container.end(), forward<Value>(value));
-        }
+    static const auto countProxy = [] (const auto& container, auto&& value) {
+        return count(container.begin(), container.end(), forward<decltype(value)>(value));
     };
-
-    static const Count countProxy{};
 
     int id(int x) { return x; }
 
