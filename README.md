@@ -1,8 +1,8 @@
 # MosquitoNet
 
-Linux: [![Linux build Status](https://travis-ci.org/simon-bourne/MosquitoNet.svg)](https://travis-ci.org/simon-bourne/MosquitoNet)
+Linux: [![Linux build Status](https://travis-ci.org/simon-bourne/MosquitoNet.svg?branch=master)](https://travis-ci.org/simon-bourne/MosquitoNet)
 
-Windows: [![Windows build status](https://ci.appveyor.com/api/projects/status/af79g9qw0u90c6qf?svg=true)](https://ci.appveyor.com/project/simon-bourne/mosquitonet)
+Windows: [![Windows build status](https://ci.appveyor.com/api/projects/status/af79g9qw0u90c6qf/branch/master?svg=true)](https://ci.appveyor.com/project/simon-bourne/mosquitonet/branch/master)
 
 This is currently under heavy development and the API is subject to change. If it looks interesting to you, but there's
 a feature or improvement you'd like, please create an issue.
