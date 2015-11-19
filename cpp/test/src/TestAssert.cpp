@@ -115,20 +115,6 @@ namespace Enhedron {
     };
 
     template<typename Expression>
-    void expectSuccess(Check& check, Expression expression) {
-        FailureHandler::reset();
-
-        try {
-            testAssert(move(expression));
-
-            check( ! VAL(bool(FailureHandler::failure())));
-        }
-        catch (const exception& e){
-            check.fail(VAL(e.what()));
-        }
-    }
-
-    template<typename Expression>
     void expectFailure(Check& check, Expression expression, const char* expressionText = nullptr) {
         FailureHandler::reset();
 
@@ -151,9 +137,9 @@ namespace Enhedron {
         bool result = op(lhs, rhs);
 
         if (result) {
-            expectSuccess(check, op(VAL(lhs), VAL(rhs)));
-            expectSuccess(check, op(lhs, VAL(rhs)));
-            expectSuccess(check, op(VAL(lhs), rhs));
+            check(op(VAL(lhs), VAL(rhs)));
+            check(op(lhs, VAL(rhs)));
+            check(op(VAL(lhs), rhs));
         }
         else {
             expectFailure(check, op(VAL(lhs), VAL(rhs)));
@@ -175,9 +161,9 @@ namespace Enhedron {
         Operator op;
         auto result = op(lhs, rhs);
 
-        expectSuccess(check, op(VAL(lhs), VAL(rhs)) == result);
-        expectSuccess(check, op(lhs, VAL(rhs)) == result);
-        expectSuccess(check, op(VAL(lhs), rhs) == result);
+        check(op(VAL(lhs), VAL(rhs)) == result);
+        check(op(lhs, VAL(rhs)) == result);
+        check(op(VAL(lhs), rhs) == result);
     }
 
     template<typename Operator>
@@ -242,10 +228,10 @@ namespace Enhedron {
 
     static Test::Suite s("Assert",
         simple("Success", [] (Check& check) {
-            expectSuccess(check, VAL(true));
-            expectSuccess(check, ! VAL(false));
-            expectSuccess(check, ! VAL(false) && !VAL(false));
-            expectSuccess(check, VAL(sum3)(1, 2, 3) == 6);
+            check(VAL(true));
+            check(! VAL(false));
+            check(! VAL(false) && !VAL(false));
+            check(VAL(sum3)(1, 2, 3) == 6);
         }),
         simple("Failure", [] (Check& check) {
             expectFailure(check, VAL(false), "false");
