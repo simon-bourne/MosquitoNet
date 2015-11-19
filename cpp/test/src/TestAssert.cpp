@@ -232,14 +232,7 @@ namespace Enhedron {
         return x + 1.0;
     }
 
-    struct Overloaded {
-        template<typename... Args>
-        auto operator()(Args&&... args) const {
-            return overloaded(forward<Args>(args)...);
-        }
-    };
-
-    static const Overloaded overloadedProxy{};
+    static const auto overloadedProxy = [] (auto... args) { return overloaded(args...); };
 
     struct Count {
         template<typename Container, typename Value>
