@@ -1,6 +1,8 @@
 # MosquitoNet
 
-Linux: [![Linux build Status](https://travis-ci.org/simon-bourne/MosquitoNet.svg?branch=master)](https://travis-ci.org/simon-bourne/MosquitoNet)
+Keep the bugs out on Linux, OS X and Windows.
+
+Linux/OS X: [![Linux/OS X build Status](https://travis-ci.org/simon-bourne/MosquitoNet.svg?branch=master)](https://travis-ci.org/simon-bourne/MosquitoNet)
 
 Windows: [![Windows build status](https://ci.appveyor.com/api/projects/status/af79g9qw0u90c6qf/branch/master?svg=true)](https://ci.appveyor.com/project/simon-bourne/mosquitonet/branch/master)
 
