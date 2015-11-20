@@ -70,7 +70,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
     }
 
     int run(int argc, const char* argv[]) {
-        Arguments args("Test Harness", "");
+        Arguments args("MosquitoNet test harness version 0.0.0");
+        args.setDescription("Test Harness");
+        args.setPositionalDescription("TEST_PATH");
 
         return args.run(argc, argv, runTests, Flag('l', "list", "List tests instead of running them."));
     }

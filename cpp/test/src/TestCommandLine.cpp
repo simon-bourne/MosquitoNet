@@ -27,7 +27,7 @@ namespace Enhedron { namespace Impl_TestCommandLine {
         ostringstream helpOut;
         ostringstream errorOut;
 
-        auto exitStatusCheck = Arguments(out(helpOut), out(errorOut), "", "").run(
+        auto exitStatusCheck = Arguments(out(helpOut), out(errorOut), "").run(
             static_cast<int>(args.size()),
             args.data(),
             [&] (vector<string> positional) {
@@ -52,7 +52,11 @@ namespace Enhedron { namespace Impl_TestCommandLine {
              ostringstream helpOut;
              ostringstream errorOut;
 
-             auto exitStatus = Arguments(out(helpOut), out(errorOut), "Description", "Notes").run(
+             Arguments args(out(helpOut), out(errorOut), "");
+             args.setDescription("Description");
+             args.setNotes("Notes");
+
+             auto exitStatus = args.run(
                  2,
                  argv,
                  [&] (vector<string> positional) {
@@ -76,7 +80,7 @@ namespace Enhedron { namespace Impl_TestCommandLine {
              ostringstream helpOut;
              ostringstream errorOut;
 
-             auto exitStatus = Arguments(out(helpOut), out(errorOut), "", "").run(
+             auto exitStatus = Arguments(out(helpOut), out(errorOut), "").run(
                  5, argv,
                  [&](const string& arg, const string& arg1, vector<string> positional) {
                      check(VAL(arg) == "xyz");
@@ -85,8 +89,8 @@ namespace Enhedron { namespace Impl_TestCommandLine {
 
                      return ExitStatus::OK;
                  },
-                 Option<string>("string"),
-                 Option<string>("string2")
+                 Option<string>(Name("string"), "value"),
+                 Option<string>(Name("string2"), "value2")
              );
 
              check(VAL(helpOut.str()) == "");
@@ -99,23 +103,28 @@ namespace Enhedron { namespace Impl_TestCommandLine {
              ostringstream helpOut;
              ostringstream errorOut;
 
-             auto exitStatus = Arguments(out(helpOut), out(errorOut), "", "").run(
+             auto exitStatus = Arguments(out(helpOut), out(errorOut), "", 40).run(
                      2, argv,
                      [&](const string& arg1, const string& arg2, vector<string> positional) {
                          check.fail(VAL("Should show help"));
 
                          return ExitStatus::OK;
                      },
-                     Option<string>("string1", "String 1 description"),
-                     Option<string>('s', "string2", "String 2 description")
+                     Option<string>(Name("string1", "String 1 description"), "string1Value"),
+                     Option<string>(Name('s', "string2", "String2descriptionShouldBeHyphenated"), "string2Value")
              );
 
              check(VAL(helpOut.str()) ==
                            "Usage: exeName [OPTION]...\n\n"
-                           "  --string1               String 1 description\n"
-                           "  -s, --string2               String 2 description\n"
-                           "  --help        Display this help message.\n"
-                           "  --version     Display version information.\n\n"
+                           "  --string1 <string1Value>\n"
+                           "                    String 1 description\n\n"
+                           "  -s, --string2 <string2Value>\n"
+                           "                    String2descriptionS-\n"
+                           "                    houldBeHyphenated\n\n"
+                           "  --help            Display this help\n"
+                           "                    message.\n\n"
+                           "  --version         Display version\n"
+                           "                    information.\n\n\n"
              );
              check(VAL(errorOut.str()) == "");
              check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
