@@ -17,10 +17,17 @@ namespace Enhedron { namespace Impl_TestCommandLine {
 
     using Args = vector<const char*>;
 
-    void testEmpty(Check& check, vector<const char*> args, ExitStatus exitStatus, const char* expectedOutput) {
-        ostringstream output;
+    void testEmpty(
+            Check& check,
+            vector<const char*> args,
+            ExitStatus exitStatus,
+            const char* expectedOutput,
+            const char* expectedErrorOutput
+    ) {
+        ostringstream helpOut;
+        ostringstream errorOut;
 
-        auto exitStatusCheck = Arguments(out(output), "", "").run(
+        auto exitStatusCheck = Arguments(out(helpOut), out(errorOut), "", "").run(
             static_cast<int>(args.size()),
             args.data(),
             [&] (vector<string> positional) {
@@ -29,21 +36,23 @@ namespace Enhedron { namespace Impl_TestCommandLine {
             }
         );
 
-        check(VAL(output.str()) == expectedOutput);
+        check(VAL(helpOut.str()) == expectedOutput);
+        check(VAL(errorOut.str()) == expectedErrorOutput);
         check(VAL(exitStatusCheck) == static_cast<int>(exitStatus));
     }
 
     static Test::Suite s("CommandLine",
-         simple("NoExeName", testEmpty, Args{}, ExitStatus::SOFTWARE, "unknown: argc is 0.\n"),
-         simple("NullArgv", testEmpty, Args{nullptr}, ExitStatus::SOFTWARE, "unknown: argv has null value.\n"),
-         simple("Empty", testEmpty, Args{""}, ExitStatus::OK, ""),
-         simple("ExitStatus", testEmpty, Args{""}, ExitStatus::CONFIG, ""),
+         simple("NoExeName", testEmpty, Args{}, ExitStatus::SOFTWARE, "", "unknown: argc is 0.\n"),
+         simple("NullArgv", testEmpty, Args{nullptr}, ExitStatus::SOFTWARE, "", "unknown: argv has null value.\n"),
+         simple("Empty", testEmpty, Args{""}, ExitStatus::OK, "", ""),
+         simple("ExitStatus", testEmpty, Args{""}, ExitStatus::CONFIG, "", ""),
 
          simple("Help", [] (Check& check) {
              const char* argv[] = { "exeName", "--help" };
-             ostringstream output;
+             ostringstream helpOut;
+             ostringstream errorOut;
 
-             auto exitStatus = Arguments(out(output), "Description", "Notes").run(
+             auto exitStatus = Arguments(out(helpOut), out(errorOut), "Description", "Notes").run(
                  2,
                  argv,
                  [&] (vector<string> positional) {
@@ -52,20 +61,22 @@ namespace Enhedron { namespace Impl_TestCommandLine {
                  }
              );
 
-             check(VAL(output.str()) ==
+             check(VAL(helpOut.str()) ==
                  "Usage: exeName [OPTION]...\n\n"
                  "Description\n\n"
                  "  --help        Display this help message.\n"
                  "  --version     Display version information.\n\n"
                  "Notes\n\n");
+             check(VAL(errorOut.str()) == "");
              check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
          }),
 
          simple("StringArgs", [] (Check& check) {
              const char* argv[] = { "exeName", "--string2", "abc", "--string", "xyz" };
-             ostringstream output;
+             ostringstream helpOut;
+             ostringstream errorOut;
 
-             auto exitStatus = Arguments(out(output), "", "").run(
+             auto exitStatus = Arguments(out(helpOut), out(errorOut), "", "").run(
                  5, argv,
                  [&](const string& arg, const string& arg1, vector<string> positional) {
                      check(VAL(arg) == "xyz");
@@ -78,15 +89,17 @@ namespace Enhedron { namespace Impl_TestCommandLine {
                  Option<string>("string2")
              );
 
-             check(VAL(output.str()) == "");
+             check(VAL(helpOut.str()) == "");
+             check(VAL(errorOut.str()) == "");
              check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
          }),
 
          simple("Description", [] (Check& check) {
              const char* argv[] = { "exeName", "--help" };
-             ostringstream output;
+             ostringstream helpOut;
+             ostringstream errorOut;
 
-             auto exitStatus = Arguments(out(output), "", "").run(
+             auto exitStatus = Arguments(out(helpOut), out(errorOut), "", "").run(
                      2, argv,
                      [&](const string& arg1, const string& arg2, vector<string> positional) {
                          check.fail(VAL("Should show help"));
@@ -97,13 +110,14 @@ namespace Enhedron { namespace Impl_TestCommandLine {
                      Option<string>('s', "string2", "String 2 description")
              );
 
-             check(VAL(output.str()) ==
+             check(VAL(helpOut.str()) ==
                            "Usage: exeName [OPTION]...\n\n"
                            "  --string1               String 1 description\n"
                            "  -s, --string2               String 2 description\n"
                            "  --help        Display this help message.\n"
                            "  --version     Display version information.\n\n"
              );
+             check(VAL(errorOut.str()) == "");
              check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
          })
     );

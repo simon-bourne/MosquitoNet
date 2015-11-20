@@ -29,6 +29,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
     using std::logic_error;
     using std::index_sequence_for;
     using std::forward;
+    using std::cout;
     using std::cerr;
     using std::runtime_error;
     using std::exception;
@@ -123,7 +124,8 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
     };
 
     class Arguments final : public NoCopy {
-        Out<ostream> output_;
+        Out<ostream> helpOut_;
+        Out<ostream> errorOut_;
         string description_;
         string notes_;
         size_t terminalWidth_;
@@ -184,11 +186,11 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
             });
 
             if (paramValues.empty()) {
-                *output_ << "Error: No value for " + param.longName() << "\n";
+                *errorOut_ << "Error: No value for " + param.longName() << "\n";
             }
 
             if (paramValues.size() > 1) {
-                *output_ << "Error: Multiple values for " + param.longName() << "\n";
+                *errorOut_ << "Error: Multiple values for " + param.longName() << "\n";
             }
 
             return runImpl(
@@ -307,7 +309,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
         )
         {
             if (checkArgs(argc, argv)) {
-                displayHelp(output_, argv[0], forward<Params>(params)...);
+                displayHelp(helpOut_, argv[0], forward<Params>(params)...);
                 return ExitStatus::OK;
             }
 
@@ -329,7 +331,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
 
                 if ( ! currentArg.empty() && currentArg[0] == '-') {
                     if (allNames.count(currentArg) == 0) {
-                        *output_<< "Error: Unknown option " << currentArg << "\n";
+                        *errorOut_<< "Error: Unknown option " << currentArg << "\n";
 
                         return ExitStatus::USAGE;
                     }
@@ -338,7 +340,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                         ++index;
 
                         if (index == argc) {
-                            *output_<< "Error: No value supplied for option " << currentArg << "\n";
+                            *errorOut_<< "Error: No value supplied for option " << currentArg << "\n";
 
                             return ExitStatus::USAGE;
                         }
@@ -363,20 +365,26 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
             );
         }
     public:
-        Arguments(Out<ostream> output, string description, string notes, size_t terminalWidth = 80) :
-                output_(output),
+        Arguments(
+                Out<ostream> helpOut,
+                Out<ostream> errorOut,
+                string description,
+                string notes,
+                size_t terminalWidth = 80
+        ) :
+                helpOut_(helpOut),
+                errorOut_(errorOut),
                 description_(description),
                 notes_(notes),
                 terminalWidth_(terminalWidth)
         {}
 
-        // TODO: Help to cout, errors to cerr.
         // TODO: Positional args description (run overloaded with positional name, wrap functor in something that
         // throws if it gets positional args).
         // TODO: Alignment of description.
         // TODO: Wrapping lines on description.
         Arguments(string description, string notes, size_t terminalWidth = 80) :
-                Arguments(out(cerr), move(description), move(notes), terminalWidth) {}
+                Arguments(out(cout), out(cerr), move(description), move(notes), terminalWidth) {}
 
         template<typename Functor, typename... Params>
         int run(
@@ -389,7 +397,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                 return static_cast<int>(runImpl(argc, argv, forward<Functor>(functor), forward<Params>(params)...));
             }
             catch (const exception& e) {
-                *output_ << ((argv && argc > 0 && argv[0]) ? argv[0] : "unknown") << ": " << e.what() << "\n";
+                *errorOut_ << ((argv && argc > 0 && argv[0]) ? argv[0] : "unknown") << ": " << e.what() << "\n";
             }
 
             return static_cast<int>(ExitStatus::SOFTWARE);
