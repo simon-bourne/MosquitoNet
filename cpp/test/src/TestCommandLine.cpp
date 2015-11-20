@@ -34,8 +34,8 @@ namespace Enhedron { namespace Impl_TestCommandLine {
     }
 
     static Test::Suite s("CommandLine",
-         simple("NoExeName", testEmpty, Args{}, ExitStatus::SOFTWARE, "Exception: argc is 0.\n"),
-         simple("NullArgv", testEmpty, Args{nullptr}, ExitStatus::SOFTWARE, "Exception: argv has null value.\n"),
+         simple("NoExeName", testEmpty, Args{}, ExitStatus::SOFTWARE, "unknown: argc is 0.\n"),
+         simple("NullArgv", testEmpty, Args{nullptr}, ExitStatus::SOFTWARE, "unknown: argv has null value.\n"),
          simple("Empty", testEmpty, Args{""}, ExitStatus::OK, ""),
          simple("ExitStatus", testEmpty, Args{""}, ExitStatus::CONFIG, ""),
 
@@ -55,10 +55,9 @@ namespace Enhedron { namespace Impl_TestCommandLine {
              check(VAL(output.str()) ==
                  "Usage: exeName [OPTION]...\n\n"
                  "Description\n\n"
-                 " Standard Options:\n\n"
                  "  --help        Display this help message.\n"
                  "  --version     Display version information.\n\n"
-                 "Notes\n");
+                 "Notes\n\n");
              check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
          }),
 
@@ -80,6 +79,31 @@ namespace Enhedron { namespace Impl_TestCommandLine {
              );
 
              check(VAL(output.str()) == "");
+             check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
+         }),
+
+         simple("Description", [] (Check& check) {
+             const char* argv[] = { "exeName", "--help" };
+             ostringstream output;
+
+             auto exitStatus = Arguments(out(output), "", "").run(
+                     2, argv,
+                     [&](const string& arg1, const string& arg2, vector<string> positional) {
+                         check.fail(VAL("Should show help"));
+
+                         return ExitStatus::OK;
+                     },
+                     Option<string>("string1", "String 1 description"),
+                     Option<string>('s', "string2", "String 2 description")
+             );
+
+             check(VAL(output.str()) ==
+                           "Usage: exeName [OPTION]...\n\n"
+                           "  --string1               String 1 description\n"
+                           "  -s, --string2               String 2 description\n"
+                           "  --help        Display this help message.\n"
+                           "  --version     Display version information.\n\n"
+             );
              check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
          })
     );

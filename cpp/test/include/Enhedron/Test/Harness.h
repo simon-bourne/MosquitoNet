@@ -70,7 +70,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
     }
 
     int run(int argc, const char* argv[]) {
-        return Arguments("Test Harness", "").run(argc, argv, runTests, Flag("list"));
+        Arguments args("Test Harness", "");
+
+        return args.run(argc, argv, runTests, Flag('l', "list", "List tests instead of running them."));
     }
 }}}}
 

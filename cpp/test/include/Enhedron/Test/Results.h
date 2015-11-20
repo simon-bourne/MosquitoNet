@@ -198,7 +198,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
             uint64_t passed = ran - failed;
 
             if (failed != 0) {
-                *outputStream_ << "FAILED: " << failed << ",";
+                *outputStream_ << "FAILED: " << failed << ", ";
             }
 
             *outputStream_ << "OK: " << passed << endl;

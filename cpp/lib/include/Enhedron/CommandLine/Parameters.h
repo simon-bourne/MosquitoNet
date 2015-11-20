@@ -16,6 +16,7 @@
 namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Parameters {
     using Util::bindFirst;
     using Util::optional;
+    using Util::mapParameterPack;
 
     using std::string;
     using std::ostream;
@@ -57,11 +58,19 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
     class ParamName: public NoCopy {
         optional<string> shortName_;
         string longName_;
-
+        optional<string> description_;
     public:
         ParamName(string longName) : longName_("--" + longName) {}
+        ParamName(string longName, string description) : longName_("--" + longName), description_(move(description)) {}
+
         ParamName(char shortName, string longName) :
                 shortName_("-"), longName_("--" + longName)
+        {
+            shortName_->push_back(shortName);
+        }
+
+        ParamName(char shortName, string longName, string description) :
+                shortName_("-"), longName_("--" + longName), description_(move(description))
         {
             shortName_->push_back(shortName);
         }
@@ -76,6 +85,24 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
         }
 
         const string& longName() const { return longName_; }
+
+        void showNames(Out<ostream> output) const {
+            *output << "  ";
+
+            if (shortName_) {
+                *output << *shortName_ << ", ";
+            }
+
+            *output << longName_;
+        }
+
+        void showDescription(Out<ostream> output, size_t terminalWidth) const {
+            if (description_) {
+                *output << "               " << *description_;
+            }
+
+            *output << "\n";
+        }
     };
 
     template<typename ValueType>
@@ -99,14 +126,33 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
         Out<ostream> output_;
         string description_;
         string notes_;
+        size_t terminalWidth_;
 
-        void displayHelp(Out<ostream> output, const char *exeName, const string &description, const string &notes) {
-            *output << "Usage: " << exeName << " [OPTION]...\n\n"
-            << description << "\n\n"
-            << " Standard Options:\n\n"
-            << "  --help        Display this help message.\n"
-            << "  --version     Display version information.\n\n"
-            << notes << "\n";
+        template <typename... Params>
+        void displayHelp(
+                Out<ostream> output,
+                const char *exeName,
+                Params&&... params
+        ) {
+            *output << "Usage: " << exeName << " [OPTION]...\n\n";
+            if ( ! description_.empty()) {
+                *output << description_ << "\n\n";
+            }
+
+            mapParameterPack(
+                    [this, output](const auto &arg) {
+                        arg.showNames(output);
+                        arg.showDescription(output, terminalWidth_);
+                    },
+                    params...
+            );
+
+            *output << "  --help        Display this help message.\n"
+                    << "  --version     Display version information.\n\n";
+
+            if ( ! notes_.empty()) {
+                *output << notes_ << "\n\n";
+            }
         }
 
         template<typename Functor>
@@ -233,10 +279,11 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
         }
 
         bool checkArgs(int argc, const char* const argv[]) {
-            bool help = false;
-
             if (argc <= 0) {
                 throw runtime_error("argc is 0.");
+            }
+            else if (argv == nullptr) {
+                throw runtime_error("argv is null.");
             }
             else {
                 for (int index = 0; index < argc; ++index) {
@@ -244,13 +291,14 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                         throw runtime_error("argv has null value.");
                     }
                     else if (argv[index] == helpOption) {
-                        help = true;
+                        return true;
                     }
                 }
             }
 
-            return help;
+            return false;
         }
+
         template<typename Functor, typename... Params>
         ExitStatus runImpl(
                 int argc, const char* const argv[],
@@ -259,7 +307,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
         )
         {
             if (checkArgs(argc, argv)) {
-                displayHelp(output_, argv[0], description_, notes_);
+                displayHelp(output_, argv[0], forward<Params>(params)...);
                 return ExitStatus::OK;
             }
 
@@ -315,14 +363,20 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
             );
         }
     public:
-        Arguments(Out<ostream> output, string description, string notes) :
+        Arguments(Out<ostream> output, string description, string notes, size_t terminalWidth = 80) :
                 output_(output),
                 description_(description),
-                notes_(notes)
+                notes_(notes),
+                terminalWidth_(terminalWidth)
         {}
 
         // TODO: Help to cout, errors to cerr.
-        Arguments(string description, string notes) : Arguments(out(cerr), move(description), move(notes)) {}
+        // TODO: Positional args description (run overloaded with positional name, wrap functor in something that
+        // throws if it gets positional args).
+        // TODO: Alignment of description.
+        // TODO: Wrapping lines on description.
+        Arguments(string description, string notes, size_t terminalWidth = 80) :
+                Arguments(out(cerr), move(description), move(notes), terminalWidth) {}
 
         template<typename Functor, typename... Params>
         int run(
@@ -335,7 +389,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                 return static_cast<int>(runImpl(argc, argv, forward<Functor>(functor), forward<Params>(params)...));
             }
             catch (const exception& e) {
-                *output_ << "Exception: " << e.what() << "\n";
+                *output_ << ((argv && argc > 0 && argv[0]) ? argv[0] : "unknown") << ": " << e.what() << "\n";
             }
 
             return static_cast<int>(ExitStatus::SOFTWARE);
