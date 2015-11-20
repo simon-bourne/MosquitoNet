@@ -5,6 +5,7 @@ os:
 - linux
 - osx
 
+osx_image: xcode7.1
 compiler:
 - gcc
 - clang
@@ -13,19 +14,13 @@ env:
 - BUILD_TYPE=Debug
 - BUILD_TYPE=Release
 
-matrix:
-  exclude:
-  - os: osx
-    compiler: clang
-
 install:
 - if [ "$TRAVIS_OS_NAME" == "linux" ] && [ "$CXX" = "clang++" ]; then export CXX="clang++-3.6" CC="clang-3.6"; fi
-- if [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
+- if [ "$TRAVIS_OS_NAME" == "linux" ] && [ "$CXX" = "g++" ]; then export CXX="g++-4.9" CC="gcc-4.9"; fi
 
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
 - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew tap homebrew/versions; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ] && [ "$CXX" = "g++" ]; then brew install gcc49 || brew link --overwrite gcc49; fi
-- if [ "$TRAVIS_OS_NAME" == "osx" ] && [ "$CXX" = "clang++" ]; then brew install llvm36 --with-clang || brew link --overwrite llvm36; fi
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install cmake; fi
 
 script:
 - mkdir -p build
