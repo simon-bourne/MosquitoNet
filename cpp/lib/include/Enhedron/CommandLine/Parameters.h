@@ -261,7 +261,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
             padding = min(terminalWidth_ / 2, padding);
 
             mapParameterPack(
-                    [this, padding](const auto &arg) {
+                    [this, padding, tabWidth](const auto &arg) {
                         auto nameString = arg.makeNamesString();
                         *helpOut_ << nameString;
                         size_t currentPadding = padding;
