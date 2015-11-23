@@ -12,6 +12,8 @@ namespace Enhedron { namespace Impl { namespace Assertion {
 
     using namespace ::Enhedron::Assertion;
 
+    // TODO: CheckWithFailureHandler should take a virtual failure handler. Assert can use a global one
+    // if it wishes. Check can use an object based one.
     template<typename Expression, typename... ContextVariableList>
     void Assert(Expression &&expression, ContextVariableList &&... contextVariableList) {
         CheckWithFailureHandler<CoutFailureHandler<TerminateInDebug>>(move(expression),

@@ -33,7 +33,7 @@ namespace Enhedron {
     );
 
     static Test::Suite u("Util",
-        simple("out", [] (Check& check) {
+        given("out", [] (Check& check) {
             int value = 10;
             auto outParam(out(value));
             *outParam *= 2;
@@ -42,7 +42,7 @@ namespace Enhedron {
             check(VAL(*outParam) == value);
             check(VAL(outParam.get()) == value);
         }),
-        simple("taggedValue", [] (Check& check) {
+        given("taggedValue", [] (Check& check) {
             TaggedValue<SimpleEnum, SimpleEnum::VALUE_0, string> value(helloWorld);
 
             check(VAL(*value) == helloWorld);
@@ -52,13 +52,13 @@ namespace Enhedron {
 
             check(VAL(value->size()) == string(helloWorld).size() + 1);
         }),
-        simple("toEnum", [] (Check& check) {
+        given("toEnum", [] (Check& check) {
             check(VAL(toEnum<SimpleEnum>(0)) == SimpleEnum::VALUE_0);
             check(VAL(toEnum<SimpleEnum>(1)) == SimpleEnum::VALUE_1);
             check.throws(VAL([] { toEnum<SimpleEnum>(-1); } ) ());
             check.throws(VAL([] { toEnum<SimpleEnum>(2); } ) ());
         }),
-        simple("jsonEscape", [] (Check& check) {
+        given("jsonEscape", [] (Check& check) {
             check(VAL(jsonEscape("")) == "");
             check(VAL(jsonEscape)(helloWorld) == VAL(helloWorld));
             check(VAL(jsonEscape("prefix\u0001postfix")) == "prefix\\u0001postfix");
@@ -70,7 +70,7 @@ namespace Enhedron {
                 choice("", "prefix"),
                 choice("", "postfix")
             ).
-            simple("jsonEscapingCombo", [] (
+            given("jsonEscapingCombo", [] (
                         Check& check,
                         pair<char, char> c,
                         const string& prefix,
@@ -90,13 +90,13 @@ namespace Enhedron {
                 }
         ),
         context("math",
-            simple("divideRoundingUp", [] (Check& check) {
+            given("divideRoundingUp", [] (Check& check) {
                 check(VAL(divideRoundingUp(0u, 10u)) == 0u);
                 check(VAL(divideRoundingUp(1u, 10u)) == 1u);
                 check(VAL(divideRoundingUp(10u, 10u)) == 1u);
                 check(VAL(divideRoundingUp(11u, 10u)) == 2u);
             }),
-            simple("makeDivisibleByRoundingDown", [] (Check& check) {
+            given("makeDivisibleByRoundingDown", [] (Check& check) {
                 for (auto i = 1u; i < 10u; ++i) {
                     check(VAL(makeDivisibleByRoundingDown(0u, i)) == 0u);
                 }
@@ -107,7 +107,7 @@ namespace Enhedron {
                 check(VAL(makeDivisibleByRoundingDown(10u, 4u)) == 8u);
                 check(VAL(makeDivisibleByRoundingDown(10u, 5u)) == 10u);
             }),
-            simple("makeDivisibleByRoundingUp", [] (Check& check) {
+            given("makeDivisibleByRoundingUp", [] (Check& check) {
                 for (auto i = 1u; i < 10u; ++i) {
                     check(VAL(makeDivisibleByRoundingUp(0u, i)) == 0u);
                 }

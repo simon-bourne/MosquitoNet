@@ -42,12 +42,12 @@ namespace Enhedron { namespace Impl_TestCommandLine {
     }
 
     static Test::Suite s("CommandLine",
-         simple("NoExeName", testEmpty, Args{}, ExitStatus::SOFTWARE, "", "unknown: argc is 0.\n"),
-         simple("NullArgv", testEmpty, Args{nullptr}, ExitStatus::SOFTWARE, "", "unknown: argv has null value.\n"),
-         simple("Empty", testEmpty, Args{""}, ExitStatus::OK, "", ""),
-         simple("ExitStatus", testEmpty, Args{""}, ExitStatus::CONFIG, "", ""),
+         given("NoExeName", testEmpty, Args{}, ExitStatus::SOFTWARE, "", "unknown: argc is 0.\n"),
+         given("NullArgv", testEmpty, Args{nullptr}, ExitStatus::SOFTWARE, "", "unknown: argv has null value.\n"),
+         given("Empty", testEmpty, Args{""}, ExitStatus::OK, "", ""),
+         given("ExitStatus", testEmpty, Args{""}, ExitStatus::CONFIG, "", ""),
 
-         simple("Help", [] (Check& check) {
+         given("Help", [] (Check& check) {
              const char* argv[] = { "exeName", "--help" };
              ostringstream helpOut;
              ostringstream errorOut;
@@ -75,7 +75,7 @@ namespace Enhedron { namespace Impl_TestCommandLine {
              check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
          }),
 
-         simple("StringArgs", [] (Check& check) {
+         given("StringArgs", [] (Check& check) {
              const char* argv[] = { "exeName", "--string2", "abc", "--string", "xyz" };
              ostringstream helpOut;
              ostringstream errorOut;
@@ -98,7 +98,7 @@ namespace Enhedron { namespace Impl_TestCommandLine {
              check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
          }),
 
-         simple("Description", [] (Check& check) {
+         given("Description", [] (Check& check) {
              const char* argv[] = { "exeName", "--help" };
              ostringstream helpOut;
              ostringstream errorOut;

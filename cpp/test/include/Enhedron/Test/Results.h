@@ -24,25 +24,12 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
         virtual void failByException(const exception& e) = 0;
     };
 
-    class ResultSimpleTest: public ResultTest {};
-
-    class ResultGWTTest: public ResultTest {
-    public:
-        virtual ~ResultGWTTest() {}
-
-        virtual Finally init() = 0;
-        virtual void given(const string& text) = 0;
-        virtual Finally when(const string& text) = 0;
-        virtual Finally then(const string& text) = 0;
-    };
-
     class ResultContext: public NoCopy {
     public:
         virtual ~ResultContext() {}
         virtual unique_ptr<ResultContext> child(const string& name) = 0;
         virtual void listTest(const string& name) = 0;
-        virtual unique_ptr<ResultSimpleTest> simpleTest(const string& name) = 0;
-        virtual unique_ptr<ResultGWTTest> gwtTest(const string& name) = 0;
+        virtual unique_ptr<ResultTest> test(const string& name) = 0;
     };
 
     class Results: public ResultContext {
@@ -52,7 +39,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
     };
 
 
-    class HumanResultTest final: public NoCopy {
+    class HumanResultTest final: public ResultTest {
         Out<ostream> outputStream_;
 
         void indent() {
@@ -85,60 +72,6 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
         void failByException(const exception& e) {
             indent();
             (*outputStream_) << "TEST FAILED! Exception: " << e.what() << endl;
-        }
-    };
-
-    class HumanResultGWTTest: public ResultGWTTest {
-        HumanResultTest test;
-    public:
-        HumanResultGWTTest(Out<ostream> outputStream) :
-            test(outputStream)
-        {}
-
-        virtual Finally init() override {
-            return Finally::empty();
-        }
-
-        virtual void given(const string& text) override {
-            test.spec("Given " + text + ",");
-        }
-
-        virtual Finally when(const string& text) override {
-            test.spec("when " + text + ",");
-            return Finally::empty();
-        }
-
-        virtual Finally then(const string& text) override {
-            test.spec("then " + text + ".");
-            return Finally::empty();
-        }
-
-        virtual void passCheck(const string& description) override {}
-
-        virtual void failCheck(const string& description) override {
-            test.failCheck(description);
-        }
-
-        virtual void failByException(const exception& e) override {
-            test.failByException(e);
-        }
-    };
-
-    class HumanResultSimpleTest final: public ResultSimpleTest {
-        HumanResultTest test;
-    public:
-        HumanResultSimpleTest(Out<ostream> outputStream) :
-            test(outputStream)
-        {}
-
-        virtual void passCheck(const string& description) override {}
-
-        virtual void failCheck(const string& description) override {
-            test.failCheck(description);
-        }
-
-        virtual void failByException(const exception& e) override {
-            test.failByException(e);
         }
     };
 
@@ -177,14 +110,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
             writeTestName(name);
         }
 
-        virtual unique_ptr<ResultSimpleTest> simpleTest(const string& name) override {
+        virtual unique_ptr<ResultTest> test(const string& name) override {
             writeTestName(name);
-            return make_unique<HumanResultSimpleTest>(outputStream_);
-        }
-
-        virtual unique_ptr<ResultGWTTest> gwtTest(const string& name) override {
-            writeTestName(name);
-            return make_unique<HumanResultGWTTest>(outputStream_);
+            return make_unique<HumanResultTest>(outputStream_);
         }
     };
 
@@ -209,8 +137,6 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 namespace Enhedron { namespace Test {
     using Impl::Impl_Results::Results;
     using Impl::Impl_Results::ResultContext;
-    using Impl::Impl_Results::ResultSimpleTest;
     using Impl::Impl_Results::ResultTest;
-    using Impl::Impl_Results::ResultGWTTest;
     using Impl::Impl_Results::HumanResults;
 }}

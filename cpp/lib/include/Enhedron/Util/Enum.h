@@ -12,7 +12,7 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Enum {
 
     /**
      * Convert a value to an enum safely. The enum must have "LAST_ENUM_VALUE" as the last
-     * enumerated value, and must be a simple enum starting at 0 and being densely populated. For example:
+     * enumerated value, and must be a given enum starting at 0 and being densely populated. For example:
      *
      *      enum class MyEnum {
      *          VALUE_0,

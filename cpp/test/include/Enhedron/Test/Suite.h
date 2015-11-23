@@ -232,33 +232,6 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 typename... ContextVariableList,
                 IsExpression<Expression> = nullptr
         >
-        Check(
-                string description,
-                Expression expression,
-                ContextVariableList... contextVariableList
-        )
-        {
-            operator()(move(description), move<Expression>(expression), move<ContextVariableList>(contextVariableList)...);
-        }
-
-        template<
-                typename Expression,
-                typename... ContextVariableList,
-                IsExpression<Expression> = nullptr
-        >
-        Check(
-                Expression expression,
-                ContextVariableList... contextVariableList
-        )
-        {
-            operator()(move<Expression>(expression), move<ContextVariableList>(contextVariableList)...);
-        }
-
-        template<
-                typename Expression,
-                typename... ContextVariableList,
-                IsExpression<Expression> = nullptr
-        >
         bool operator()(
                 string description,
                 Expression expression,
@@ -337,72 +310,6 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         return Stats::ok();
     }
 
-    enum class Tag {
-        Given,
-        When,
-        Then
-    };
-
-    using Given = TaggedValue<Tag, Tag::Given, string>;
-    using When = TaggedValue<Tag, Tag::When, string>;
-    using Then = TaggedValue<Tag, Tag::Then, string>;
-
-    template<typename TestClass, typename... Args>
-    Stats runGwt(const string& name, Out<ResultContext> results, Args&&... args);
-
-    class GWT: public NoCopy {
-        Given givenText;
-        When whenText;
-        Then thenText;
-        Check checker;
-
-        template<typename TestClass, typename... Args>
-        friend Stats runGwt(const string& name, Out<ResultContext> results, Args&&... args);
-    public:
-        GWT(Given given, When when, Then then) :
-            givenText(move(given)), whenText(move(when)), thenText(move(then)) {}
-
-        void addException(const exception& e) {
-            checker.addException(e);
-        }
-
-        template<typename... Args>
-        auto check(Args&&... args) { return checker(forward<Args>(args)...); }
-
-        template<typename... Args>
-        auto checkThrows(Args&&... args) { return checker.throws(forward<Args>(args)...); }
-
-        template<typename... Args>
-        auto fail(Args&&... args) { return checker.fail(forward<Args>(args)...); }
-    };
-
-    template<typename TestClass, typename... Args>
-    Stats runGwt(const string& name, Out<ResultContext> results, Args&&... args) {
-        auto gwtResults(results->gwtTest(name));
-        auto given(gwtResults->init());
-        TestClass test{forward<Args>(args)...};
-        given.close();
-
-        gwtResults->given(*test.givenText);
-
-        try {
-            {
-                auto whenBlock(gwtResults->when(*test.whenText));
-                test.when();
-            }
-
-            {
-                auto thenBlock(gwtResults->then(*test.thenText));
-                test.then();
-            }
-        }
-        catch (const exception& e) {
-            test.checker.addException(e);
-        }
-
-        return logFailures(test.checker, name, out(*gwtResults));
-    }
-
     template<typename Functor, typename... Args>
     class Runner final: public Context {
         bool included(const StringTree& pathTree) const {
@@ -431,37 +338,21 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         }
     };
 
-    template<typename TestClass, typename... Args>
-    unique_ptr<Context> gwt(string name, Args&&... args) {
-        return make_unique<
-                    Runner<function<Stats(
-                            DecayArrayAndFunction_t< Args>&&...,
-                            const string&, Out<ResultContext>
-                    )>,
-                    DecayArrayAndFunction_t< Args>...>
-                >
-            (
-                move(name),
-                runGwt<TestClass, Args...>,
-                forward<Args>(args)...
-            );
-    }
-
     template<typename Functor, typename... Args>
-    class RunSimple final: public NoCopy {
+    class RunTest final: public NoCopy {
         Functor runTest;
     public:
-        RunSimple(Functor runTest) : runTest(move(runTest)) {}
+        RunTest(Functor runTest) : runTest(move(runTest)) {}
 
         // Visual C++ 2015 seems to generate a dodgy move constructor here.
-        RunSimple(RunSimple&& other) : runTest(move(other.runTest)) {}
+        RunTest(RunTest&& other) : runTest(move(other.runTest)) {}
 
-        RunSimple operator=(RunSimple&& other) {
+        RunTest operator=(RunTest&& other) {
             runTest = move(other.runTest);
         }
 
         Stats operator()(const string& name, Out<ResultContext> results, Args&&... args) {
-            auto test = results->simpleTest(name);
+            auto test = results->test(name);
             Check check;
 
             try {
@@ -495,10 +386,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     };
 
     template<typename Functor, typename... Args>
-    unique_ptr<Context> simple(string name, Functor runTest, Args&&... args) {
-        return make_unique<Runner<RunSimple<Functor, DecayArrayAndFunction_t<Args>...>, DecayArrayAndFunction_t<Args>...>>(
+    unique_ptr<Context> given(string name, Functor runTest, Args&&... args) {
+        return make_unique<Runner<RunTest<Functor, DecayArrayAndFunction_t<Args>...>, DecayArrayAndFunction_t<Args>...>>(
                 move(name),
-                RunSimple<Functor, DecayArrayAndFunction_t<Args>...>(runTest),
+                RunTest<Functor, DecayArrayAndFunction_t<Args>...>(runTest),
                 Forward<DecayArrayAndFunction_t<Args>>::run(args)...
             );
     }
@@ -543,7 +434,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         RunExhaustive(Functor runTest, StoreArgs<Args...> args) : runTest(move(runTest)), args(move(args)) {}
 
         Stats operator()(const string& name, Out<ResultContext> results) {
-            auto test = results->simpleTest(name);
+            auto test = results->test(name);
             Check check;
 
             try {
@@ -574,7 +465,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         Exhaustive(Args&&... args) : args(forward<Args>(args)...) {}
 
         template<typename Functor>
-        unique_ptr<Context> simple(string name, Functor runTest) {
+        unique_ptr<Context> given(string name, Functor runTest) {
             return make_unique<Runner<RunExhaustive<Functor, Args...>>>(
                     move(name),
                     RunExhaustive<Functor, Args...>(move(runTest), move(args))
@@ -610,12 +501,7 @@ namespace Enhedron { namespace Test {
     using Impl::Impl_Suite::Suite;
     using Impl::Impl_Suite::context;
     using Impl::Impl_Suite::Check;
-    using Impl::Impl_Suite::simple;
-    using Impl::Impl_Suite::GWT;
-    using Impl::Impl_Suite::gwt;
-    using Impl::Impl_Suite::Given;
-    using Impl::Impl_Suite::When;
-    using Impl::Impl_Suite::Then;
+    using Impl::Impl_Suite::given;
     using Impl::Impl_Suite::Exhaustive;
     using Impl::Impl_Suite::exhaustive;
     using Impl::Impl_Suite::choice;
