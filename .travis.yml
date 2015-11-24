@@ -1,6 +1,9 @@
 language: cpp
 sudo: false
 
+notifications:
+  email: false
+
 os:
 - linux
 - osx
