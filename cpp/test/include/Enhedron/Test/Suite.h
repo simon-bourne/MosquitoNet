@@ -474,7 +474,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         {
             for (auto&& value : container) {
                 exhaustiveImpl(
-                        bindFirst(forward<BoundFunctor>(functor), value, index_sequence_for<BoundArgs...>()),
+                        [&] (auto&&... args) { functor(value, forward<decltype(args)>(args)...); },
                         forward<BoundArgs>(tail)...
                     );
             }
