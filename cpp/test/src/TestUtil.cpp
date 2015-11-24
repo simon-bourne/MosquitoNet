@@ -70,7 +70,7 @@ namespace Enhedron {
                 choice("", "prefix"),
                 choice("", "postfix")
             ).
-            given("jsonEscapingCombo", [] (
+            given("a prefix, a postfix and a char that requires escaping", [] (
                         Check& check,
                         pair<char, char> c,
                         const string& prefix,
@@ -86,7 +86,9 @@ namespace Enhedron {
                     result += c.second;
                     result += postfix;
 
-                    check(VAL(jsonEscape(input)) == result);
+                    check.when("we escape the input", [&] {
+                        check("the char is escaped", VAL(jsonEscape(input)) == result);
+                    });
                 }
         ),
         context("math",

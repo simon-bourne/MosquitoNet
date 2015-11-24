@@ -193,6 +193,60 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         static void run() {}
     };
 
+    class WhenRunner {
+        struct StackElement {
+            size_t index = 0;
+            size_t current = 0;
+        };
+
+        vector<StackElement> whenStack;
+        size_t whenDepth = 0;
+
+        bool topWhenDone() const {
+            const auto& top = whenStack.back();
+
+            return top.current == top.index + 1;
+        }
+
+    public:
+        template<typename Functor, typename... Args>
+        void run(Functor&& functor, Args&&... args) {
+            whenStack.clear();
+            whenDepth = 0;
+
+            do {
+                for (auto& element : whenStack) {
+                    element.current = 0;
+                }
+
+                functor(forward<Args>(args)...);
+
+                while ( ! whenStack.empty() && topWhenDone()) {
+                    whenStack.pop_back();
+                }
+
+                if ( ! whenStack.empty()) {
+                    ++whenStack.back().index;
+                }
+            } while ( ! whenStack.empty());
+        }
+
+        template<typename Functor>
+        void when(Functor&& functor) {
+            if (whenStack.size() <= whenDepth) {
+                whenStack.push_back(StackElement{});
+            }
+
+            if (whenStack[whenDepth].index == whenStack[whenDepth].current) {
+                ++whenDepth;
+                functor();
+                --whenDepth; // TODO: Exception safety.
+            }
+
+            ++whenStack[whenDepth].current;
+        }
+    };
+
     class Check : public NoCopy {
         using FailureHandler = CoutFailureHandler<NullAction>;
 
@@ -202,6 +256,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         };
 
         vector<Status> statusList;
+        Out<WhenRunner> whenRunner_;
 
         friend Stats logFailures(const Check& checker, const string& name, Out<ResultTest> results);
 
@@ -221,7 +276,12 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             return failed;
         }
     public:
-        Check() = default;
+        Check(Out<WhenRunner> whenRunner) : whenRunner_(whenRunner) {}
+
+        template<typename Functor>
+        void when(string description, Functor&& functor) {
+            whenRunner_->when(forward<Functor>(functor));
+        }
 
         void addException(const exception& e) {
             statusList.emplace_back(Status{ true, e.what()} );
@@ -353,10 +413,11 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
         Stats operator()(const string& name, Out<ResultContext> results, Args&&... args) {
             auto test = results->test(name);
-            Check check;
+            WhenRunner whenRunner;
+            Check check(out(whenRunner));
 
             try {
-                runTest(check, forward<Args>(args)...);
+                whenRunner.run(runTest, check, forward<Args>(args)...);
             }
             catch (const exception& e) {
                 check.addException(e);
@@ -421,12 +482,15 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
         static void exhaustive(
                 Functor&& functor,
+                Out<WhenRunner> whenRunner,
                 Check& check,
                 Args&&... extractedArgs
         )
         {
             exhaustiveImpl(
-                    bindFirst(forward<Functor>(functor), ref(check), index_sequence_for<Args...>()),
+                    [&] (auto&&... args) {
+                        whenRunner->run(forward<Functor>(functor), ref(check), forward<decltype(args)>(args)...);
+                    },
                     forward<Args>(extractedArgs)...
                 );
         }
@@ -435,10 +499,11 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
         Stats operator()(const string& name, Out<ResultContext> results) {
             auto test = results->test(name);
-            Check check;
+            WhenRunner whenRunner;
+            Check check(out(whenRunner));
 
             try {
-                args.applyExtraBefore(exhaustive, move(runTest), ref(check));
+                args.applyExtraBefore(exhaustive, move(runTest), out(whenRunner), ref(check));
             }
             catch (const exception& e) {
                 check.addException(e);
