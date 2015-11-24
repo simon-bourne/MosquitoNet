@@ -128,6 +128,29 @@ namespace Enhedron { namespace Impl_TestCommandLine {
              );
              check(VAL(errorOut.str()) == "");
              check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
-         })
+         }),
+
+        given("VectorArgs", [] (Check& check) {
+            const char* argv[] = { "exeName", "--vector", "value0", "--vector", "value1"};
+            ostringstream helpOut;
+            ostringstream errorOut;
+
+            auto exitStatus = Arguments(out(helpOut), out(errorOut), "").run(
+                    5, argv,
+                    [&](const vector<string>& vectorOption, vector<string> positional) {
+                        if (check(VAL(vectorOption.size()) == 2u)) {
+                            check(VAL(vectorOption[0]) == "value0");
+                            check(VAL(vectorOption[1]) == "value1");
+                        }
+
+                        return ExitStatus::OK;
+                    },
+                    Option<vector<string>>(Name("vector", ""), "")
+            );
+
+            check(VAL(helpOut.str()) == "");
+            check(VAL(errorOut.str()) == "");
+            check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
+        })
     );
 }}

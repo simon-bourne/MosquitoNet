@@ -350,6 +350,36 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                 vector<string> positionalArgs,
                 set<string> setFlags,
                 Functor&& functor,
+                Option<vector<string>>&& param,
+                ParamTail&&... paramTail
+        )
+        {
+            vector<string> paramValues;
+
+            param.forEachName([&] (const string& name) {
+                const auto& newValues = optionValues[name];
+                paramValues.insert(paramValues.end(), newValues.begin(), newValues.end());
+            });
+
+            return runImpl(
+                    move(optionValues),
+                    move(positionalArgs),
+                    move(setFlags),
+                    bindFirst(
+                            forward<Functor>(functor),
+                            move(paramValues),
+                            index_sequence_for<Option<string>, ParamTail...>()
+                    ),
+                    forward<ParamTail>(paramTail)...
+            );
+        }
+
+        template<typename Functor, typename... ParamTail>
+        ExitStatus runImpl(
+                map<string, vector<string>> optionValues,
+                vector<string> positionalArgs,
+                set<string> setFlags,
+                Functor&& functor,
                 Flag&& flag,
                 ParamTail&&... paramTail
         )
