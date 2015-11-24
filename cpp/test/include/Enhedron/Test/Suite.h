@@ -461,55 +461,53 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         StoreArgs<Args...> args;
 
         template<typename BoundFunctor>
-        static void exhaustiveImpl(BoundFunctor&& functor) {
-            functor();
-        }
-
-        template<typename BoundFunctor, typename Container, typename... BoundArgs>
-        static void exhaustiveImpl(
-                BoundFunctor&& functor,
-                Container&& container,
-                BoundArgs&&... tail
-            )
-        {
-            for (auto&& value : container) {
-                exhaustiveImpl(
-                        [&] (auto&&... args) { functor(value, forward<decltype(args)>(args)...); },
-                        forward<BoundArgs>(tail)...
-                    );
-            }
-        }
-
-        static void exhaustive(
-                Functor&& functor,
-                Out<WhenRunner> whenRunner,
-                Check& check,
-                Args&&... extractedArgs
-        )
-        {
-            exhaustiveImpl(
-                    [&] (auto&&... args) {
-                        whenRunner->run(forward<Functor>(functor), ref(check), forward<decltype(args)>(args)...);
-                    },
-                    forward<Args>(extractedArgs)...
-                );
-        }
-    public:
-        RunExhaustive(Functor runTest, StoreArgs<Args...> args) : runTest(move(runTest)), args(move(args)) {}
-
-        Stats operator()(const string& name, Out<ResultContext> results) {
-            auto test = results->test(name);
+        static Stats exhaustive(BoundFunctor&& functor, const string& name, Out<ResultTest> test) {
             WhenRunner whenRunner;
             Check check(out(whenRunner));
 
             try {
-                args.applyExtraBefore(exhaustive, move(runTest), out(whenRunner), ref(check));
+                whenRunner.run(forward<BoundFunctor>(functor), ref(check));
             }
             catch (const exception& e) {
                 check.addException(e);
             }
 
             return logFailures(check, name, out(*test));
+        }
+
+        template<typename BoundFunctor, typename Container, typename... BoundArgs>
+        static Stats exhaustive(
+                BoundFunctor&& functor,
+                const string& name,
+                Out<ResultTest> test,
+                const Container& container,
+                const BoundArgs&... tail
+            )
+        {
+            Stats stats;
+
+            for (const auto& value : container) {
+                stats += exhaustive(
+                        [&] (Check& check, auto&&... args) {
+                            functor(ref(check), value, args...);
+                        },
+                        name,
+                        test,
+                        tail...
+                    );
+            }
+
+            return stats;
+        }
+    public:
+        RunExhaustive(Functor runTest, StoreArgs<Args...> args) : runTest(move(runTest)), args(move(args)) {}
+
+        Stats operator()(const string& name, Out<ResultContext> results) {
+            auto test = results->test(name);
+
+            return args.apply([&] (const Args&... extractedArgs) {
+                return exhaustive(move(runTest), name, out(*test), extractedArgs...);
+            });
         }
     };
 

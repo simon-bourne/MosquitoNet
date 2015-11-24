@@ -45,9 +45,19 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
         return f(get<indices>(args)...);
     }
 
+    template<typename Functor, size_t... indices, typename... Args>
+    auto extractParameterPack(Functor&& f, index_sequence<indices...>, tuple<Args...>&& args) {
+        return f(get<indices>(forward<tuple<Args...>>(args))...);
+    }
+
     template<typename Functor, typename... Args>
     auto extractParameterPack(Functor&& f, const tuple<Args...>& args) {
         return extractParameterPack(forward<Functor>(f), index_sequence_for<Args...>(), args);
+    }
+
+    template<typename Functor, typename... Args>
+    auto extractParameterPack(Functor&& f, tuple<Args...>&& args) {
+        return extractParameterPack(forward<Functor>(f), index_sequence_for<Args...>(), forward<Args>(args)...);
     }
 
     template<typename Functor>
@@ -87,7 +97,8 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
 
     template<typename... Args>
     class StoreArgs final: public NoCopy {
-        tuple<remove_reference_t<Args>...> args;
+        using TupleType = tuple<remove_reference_t<Args>...>;
+        TupleType args;
 
         template <typename Functor, size_t... indices, typename... ExtraArgs>
         auto applyExtraBeforeImpl(Functor&& functor, index_sequence<indices...>, ExtraArgs&&... extraArgs) {
@@ -104,7 +115,7 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
 
         template <typename Functor>
         auto apply(Functor&& functor) {
-            return extractParameterPack(forward<Functor>(functor), forward<Args>(args)...);
+            return extractParameterPack(forward<Functor>(functor), args);
         }
 
         template <typename Functor, typename... ExtraArgs>
