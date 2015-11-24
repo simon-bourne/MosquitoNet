@@ -230,29 +230,29 @@ namespace Enhedron {
     // Like:
     // given("checks that succeed", "success", ...
     static Test::Suite s("Assert",
-        given("Success", [] (auto& check) {
+        given("Success", [] (Check& check) {
             check(VAL(true));
             check(! VAL(false));
             check(! VAL(false) && !VAL(false));
             check(VAL(sum3)(1, 2, 3) == 6);
         }),
-        given("Failure", [] (auto& check) {
+        given("Failure", [] (Check& check) {
             expectFailure(check, VAL(false), "false");
             expectFailure(check, VAL(false) || VAL(false), "(false || false)");
             expectFailure(check, VAL(sum3)(1, 2, 3) == 7, "(sum3(1, 2, 3) == 7)");
         }),
-        given("Overloaded", [] (auto& check) {
+        given("Overloaded", [] (Check& check) {
             check(VAL(overloadedProxy)(1) == overloaded(1));
             check(VAL(overloadedProxy)(1.0) == overloaded(1.0));
             expectFailure(check, VAL(overloadedProxy)(1) == 2, "(overloadedProxy(1) == 2)");
         }),
-        given("Template", [] (auto& check) {
+        given("Template", [] (Check& check) {
             vector<int> intVec{ 1, 2, 3 };
             check(VAL(countProxy)(intVec, 1) == 1);
             check(VAL(countProxy)(intVec, 0) == 0);
             expectFailure(check, VAL(countProxy)(intVec, 0) == 1, "(countProxy([1, 2, 3], 0) == 1)");
         }),
-        given("ValueSemantics", [] (auto& check) {
+        given("ValueSemantics", [] (Check& check) {
             MoveTracker moveTracker;
 
             VAL(moveTracker);
@@ -304,11 +304,11 @@ namespace Enhedron {
                 "Values are stored by reference"
             );
         }),
-        given("ThrowSucceeds", [] (auto& check) {
+        given("ThrowSucceeds", [] (Check& check) {
             testAssertThrows<exception>(VAL([] { throw runtime_error("test"); })());
             testAssertThrows<runtime_error>(VAL([] { throw runtime_error("test"); })());
         }),
-        given("ThrowFails", [] (auto& check) {
+        given("ThrowFails", [] (Check& check) {
             expectException<logic_error>(
                     check,
                     VAL([] { throw runtime_error("test"); })(),
@@ -322,11 +322,11 @@ namespace Enhedron {
             );
 
         }),
-        given("BinaryBoolean", [] (auto& check) {
+        given("BinaryBoolean", [] (Check& check) {
             testBooleanOperator<std::logical_and<void>>(check);
             testBooleanOperator<std::logical_or<void>>(check);
         }),
-        given("Comparison", [] (auto& check) {
+        given("Comparison", [] (Check& check) {
             testNumericOperator<std::equal_to<void>>(check);
             testNumericOperator<std::not_equal_to<void>>(check);
             testNumericOperator<std::less<void>>(check);
@@ -334,7 +334,7 @@ namespace Enhedron {
             testNumericOperator<std::greater<void>>(check);
             testNumericOperator<std::greater_equal<void>>(check);
         }),
-        given("Arithmetic", [] (auto& check) {
+        given("Arithmetic", [] (Check& check) {
             testNumericOperator<std::plus<void>>(check);
             testNumericOperator<std::minus<void>>(check);
             testNumericOperator<std::multiplies<void>>(check);
@@ -342,7 +342,7 @@ namespace Enhedron {
             testNonZeroDenominator<std::modulus<void>>(check);
             testNonZeroDenominator<std::divides<void>>(check);
         }),
-        given("Bitwise", [] (auto& check) {
+        given("Bitwise", [] (Check& check) {
             testNumericOperator<std::bit_and<void>>(check);
             testNumericOperator<std::bit_or<void>>(check);
             testNumericOperator<std::bit_xor<void>>(check);
