@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <vector>
 
 namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
     using std::exception;
@@ -15,13 +16,18 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
     using std::make_unique;
     using std::ostream;
     using std::endl;
+    using std::vector;
 
-    class ResultTest: public NoCopy {
+    using Assertion::FailureHandler;
+    using Assertion::Variable;
+
+    class ResultTest: public NoCopy, public FailureHandler {
     public:
         virtual ~ResultTest() {}
         virtual void passCheck(const string& description) = 0;
         virtual void failCheck(const string& description) = 0;
         virtual void failByException(const exception& e) = 0;
+        virtual void handleCheckFailure(const string &expressionText, const vector <Variable> &variableList) = 0;
     };
 
     class ResultContext: public NoCopy {
@@ -50,26 +56,28 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
                 outputStream_(outputStream)
         {}
 
-        void describe(const string& text) {
+        virtual void handleCheckFailure(const string &expressionText, const vector <Variable> &variableList) override {
             indent();
             indent();
-            (*outputStream_) << text << endl;
+            (*outputStream_) << "Check failed: " << expressionText << "\n";
+
+            for (const auto& variable : variableList) {
+                indent();
+                indent();
+                indent();
+                (*outputStream_) << variable.name() << " = " << variable.value()
+                                 << ": file \"" << variable.file() << "\", line " << variable.line() << ".\n";
+            }
         }
 
-        void spec(const string& text) {
-            indent();
-            indent();
-            (*outputStream_) << text << endl;
-        }
+        virtual void passCheck(const string& description) override {}
 
-        void passCheck(const string& description) {}
-
-        void failCheck(const string& description) {
+        virtual void failCheck(const string& description) override {
             indent();
             (*outputStream_) << "TEST FAILED! " << description << endl;
         }
 
-        void failByException(const exception& e) {
+        virtual void failByException(const exception& e) override {
             indent();
             (*outputStream_) << "TEST FAILED! Exception: " << e.what() << endl;
         }

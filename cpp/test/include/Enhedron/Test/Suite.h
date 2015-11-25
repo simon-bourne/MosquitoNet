@@ -188,11 +188,6 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         }
     };
 
-    struct NullAction final: public NoCopy {
-        static constexpr const char* name = "Test";
-        static void run() {}
-    };
-
     class WhenRunner {
         struct StackElement {
             size_t index = 0;
@@ -253,7 +248,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             string description;
         };
 
-        CoutFailureHandler<NullAction> failureHandler;
+        Out<ResultTest> result_;
         vector<Status> statusList;
         Out<WhenRunner> whenRunner_;
 
@@ -275,7 +270,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             return failed;
         }
     public:
-        Check(Out<WhenRunner> whenRunner) : whenRunner_(whenRunner) {}
+        Check(Out<ResultTest> result, Out<WhenRunner> whenRunner) : result_(result), whenRunner_(whenRunner) {}
 
         template<typename Functor>
         void when(string description, Functor&& functor) {
@@ -298,7 +293,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         )
         {
             auto ok = CheckWithFailureHandler(
-                    out(failureHandler),
+                    result_,
                     move(expression),
                     move(contextVariableList)...
             );
@@ -347,7 +342,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         )
         {
             auto ok = CheckThrowsWithFailureHandler<Exception>(
-                    out(failureHandler),
+                    result_,
                     move(expression),
                     move(contextVariableList)...
             );
@@ -359,7 +354,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         template<typename Expression, typename... ContextVariableList>
         void fail(Expression expression, ContextVariableList... contextVariableList) {
             statusList.push_back(Status {true, expression.evaluate()});
-            ProcessFailure(out(failureHandler), move(expression), move(contextVariableList)...);
+            ProcessFailure(result_, move(expression), move(contextVariableList)...);
         }
     };
 
@@ -415,7 +410,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         Stats operator()(const string& name, Out<ResultContext> results, Args&&... args) {
             auto test = results->test(name);
             WhenRunner whenRunner;
-            Check check(out(whenRunner));
+            Check check(out(*test), out(whenRunner));
 
             try {
                 whenRunner.run(runTest, check, forward<Args>(args)...);
@@ -464,7 +459,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         template<typename BoundFunctor>
         static Stats exhaustive(BoundFunctor&& functor, const string& name, Out<ResultTest> test) {
             WhenRunner whenRunner;
-            Check check(out(whenRunner));
+            Check check(test, out(whenRunner));
 
             try {
                 whenRunner.run(forward<BoundFunctor>(functor), ref(check));

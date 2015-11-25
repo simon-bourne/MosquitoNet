@@ -3,16 +3,41 @@
 #pragma once
 
 #include "Enhedron/Assertion/Configurable.h"
-#include "Enhedron/Assertion/Handlers.h"
 
+#include <vector>
+#include <string>
+#include <iostream>
 #include <utility>
 
 namespace Enhedron { namespace Impl { namespace Impl_Assertion {
     using std::move;
+    using std::terminate;
+    using std::vector;
+    using std::string;
+    using std::cerr;
 
     using namespace ::Enhedron::Assertion;
 
-    static CoutFailureHandler<TerminateInDebug> failureHandler;
+    struct CerrFailureHandler final: FailureHandler {
+        virtual ~CerrFailureHandler() override {}
+
+        virtual void handleCheckFailure(const string &expressionText, const vector <Variable> &variableList) override {
+            cerr << "Assert failed: " << expressionText << "\n";
+
+            for (const auto &variable : variableList) {
+                cerr << "    " << variable.name() << " = " << variable.value() <<
+                ": in file " << variable.file() << ", line " << variable.line() << "\n";
+            }
+
+            cerr.flush();
+
+            #ifndef NDEBUG
+                terminate();
+            #endif
+        }
+    };
+
+    static CerrFailureHandler failureHandler;
 
     template<typename Expression, typename... ContextVariableList>
     void Assert(Expression &&expression, ContextVariableList &&... contextVariableList) {
