@@ -248,13 +248,12 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     };
 
     class Check : public NoCopy {
-        using FailureHandler = CoutFailureHandler<NullAction>;
-
         struct Status {
             bool failed;
             string description;
         };
 
+        CoutFailureHandler<NullAction> failureHandler;
         vector<Status> statusList;
         Out<WhenRunner> whenRunner_;
 
@@ -298,7 +297,8 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 ContextVariableList... contextVariableList
         )
         {
-            auto ok = CheckWithFailureHandler<FailureHandler>(
+            auto ok = CheckWithFailureHandler(
+                    out(failureHandler),
                     move(expression),
                     move(contextVariableList)...
             );
@@ -346,7 +346,8 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 ContextVariableList... contextVariableList
         )
         {
-            auto ok = CheckThrowsWithFailureHandler<FailureHandler, Exception>(
+            auto ok = CheckThrowsWithFailureHandler<Exception>(
+                    out(failureHandler),
                     move(expression),
                     move(contextVariableList)...
             );
@@ -358,7 +359,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         template<typename Expression, typename... ContextVariableList>
         void fail(Expression expression, ContextVariableList... contextVariableList) {
             statusList.push_back(Status {true, expression.evaluate()});
-            ProcessFailure<FailureHandler>(move(expression), move(contextVariableList)...);
+            ProcessFailure(out(failureHandler), move(expression), move(contextVariableList)...);
         }
     };
 

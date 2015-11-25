@@ -16,14 +16,6 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Handlers {
     using std::string;
     using std::cout;
 
-    void failWithSourceLocation(
-            const char *name,
-            const char *message,
-            const char *file,
-            int line,
-            const char *functionName
-    );
-
     struct TerminateInDebug final : public NoCopy {
         static constexpr const char *name = "assert";
 
@@ -35,9 +27,10 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Handlers {
     };
 
     template<typename FailureAction>
-    class CoutFailureHandler {
-    public:
-        static void handleCheckFailure(const string &expressionText, const vector <Variable> &variableList) {
+    struct CoutFailureHandler final: FailureHandler {
+        virtual ~CoutFailureHandler() override {}
+
+        virtual void handleCheckFailure(const string &expressionText, const vector <Variable> &variableList) override {
             {
                 cout << FailureAction::name << " failed: " << expressionText << "\n";
 
@@ -57,5 +50,4 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Handlers {
 namespace Enhedron { namespace Assertion {
     using Impl::Handlers::CoutFailureHandler;
     using Impl::Handlers::TerminateInDebug;
-    using Impl::Handlers::failWithSourceLocation;
 }}

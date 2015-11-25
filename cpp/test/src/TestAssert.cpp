@@ -55,41 +55,35 @@ namespace Enhedron {
         };
     }
 
-    class FailureHandler {
+    class RecordFailures final: public FailureHandler {
     public:
         struct Failure {
             string expressionText;
             vector<Variable> variableList;
         };
     private:
-        static optional<Failure> failure_;
+        optional<Failure> failure_;
     public:
-        static void handleCheckFailure(string expressionText, vector<Variable> variableList) {
+        virtual ~RecordFailures() override {}
+
+        virtual void handleCheckFailure(const string& expressionText, const vector<Variable>& variableList) override {
             if (failure_) {
                 throw runtime_error("Multiple failures");
             }
 
-            failure_ = Failure{move(expressionText), move(variableList)};
+            failure_ = Failure{expressionText, variableList};
         }
 
-        static void reset() {
-            failure_.reset();
-        }
-
-        static const optional<Failure>& failure() { return failure_; }
+        const optional<Failure>& failure() { return failure_; }
     };
 
-    optional<FailureHandler::Failure> FailureHandler::failure_;
-
-    template<typename Expression, typename... ContextVariableList>
-    void testAssert(Expression &&expression, ContextVariableList &&... contextVariableList) {
-        CheckWithFailureHandler<FailureHandler>(move(expression), move(contextVariableList)...);
-    }
-
     template<typename Exception, typename Expression, typename... ContextVariableList>
-    void testAssertThrows(Expression &&expression, ContextVariableList &&... contextVariableList) {
-        CheckThrowsWithFailureHandler<FailureHandler, Exception>(move(expression),
-                move(contextVariableList)...);
+    void testAssertThrows(
+            Out<FailureHandler> failureHandler,
+            Expression &&expression,
+            ContextVariableList &&... contextVariableList
+    ) {
+        CheckThrowsWithFailureHandler<Exception>(failureHandler, move(expression), move(contextVariableList)...);
     }
 
     class MoveTracker final: public NoCopy {
@@ -116,11 +110,11 @@ namespace Enhedron {
 
     template<typename Expression>
     void expectFailure(Check& check, Expression expression, const char* expressionText = nullptr) {
-        FailureHandler::reset();
+        RecordFailures recordFailures;
 
         try {
-            testAssert(move(expression));
-            auto& failure = FailureHandler::failure();
+            CheckWithFailureHandler(out(recordFailures), move(expression));
+            auto& failure = recordFailures.failure();
 
             if (check(VAL(bool(failure))) && expressionText) {
                 check(VAL(failure->expressionText) == expressionText);
@@ -190,12 +184,11 @@ namespace Enhedron {
 
     template<typename Exception, typename Expression>
     void expectException(Check& check, Expression expression, const char* expressionText) {
-        FailureHandler::reset();
+        RecordFailures recordFailures;
 
         try {
-            testAssertThrows<Exception>(move(expression));
-
-            auto& failure = FailureHandler::failure();
+            testAssertThrows<Exception>(out(recordFailures), move(expression));
+            auto& failure = recordFailures.failure();
 
             if (check(VAL(bool(failure))) && expressionText) {
                 check(VAL(failure->expressionText) == expressionText);
@@ -305,8 +298,11 @@ namespace Enhedron {
             );
         }),
         given("ThrowSucceeds", [] (Check& check) {
-            testAssertThrows<exception>(VAL([] { throw runtime_error("test"); })());
-            testAssertThrows<runtime_error>(VAL([] { throw runtime_error("test"); })());
+            RecordFailures recordFailures;
+            testAssertThrows<exception>(out(recordFailures), VAL([] { throw runtime_error("test"); })());
+            testAssertThrows<runtime_error>(out(recordFailures), VAL([] { throw runtime_error("test"); })());
+
+            check( ! VAL(bool(recordFailures.failure())));
         }),
         given("ThrowFails", [] (Check& check) {
             expectException<logic_error>(
