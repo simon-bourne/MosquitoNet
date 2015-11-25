@@ -73,6 +73,13 @@ namespace Enhedron { namespace Assertion {
             return valueString.str();
         }
     };
+
+    template<typename Value>
+    struct Convert<Value, std::enable_if_t<std::is_function<std::remove_reference_t<Value>>::value>> {
+        static std::string toString(Value value) {
+            return "<function>";
+        }
+    };
 }}
 
 namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurable {
