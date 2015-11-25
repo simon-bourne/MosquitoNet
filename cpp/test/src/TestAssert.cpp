@@ -211,10 +211,13 @@ namespace Enhedron {
         return x + 1.0;
     }
 
-    static auto overloadedProxy = makeFunction(
-        "overloaded",
-        [] (auto&&... args) { return overloaded(forward<decltype(args)>(args)...); }
-    );
+    template<typename... Args>
+    auto overloadedProxy(Args&&... args) {
+        return makeFunction(
+                "overloaded",
+                [] (auto&&... args) { return overloaded(forward<decltype(args)>(args)...); }
+        )(forward<Args>(args)...);
+    }
 
     static auto countProxy = makeFunction(
         "count",
@@ -225,9 +228,6 @@ namespace Enhedron {
 
     int id(int x) { return x; }
 
-    // TODO: Name all tests (mandatory) with a symbolic name and description.
-    // Like:
-    // given("checks that succeed", "success", ...
     static Test::Suite s("Assert",
         given("Success", [] (Check& check) {
             check(VAL(true));
@@ -238,7 +238,9 @@ namespace Enhedron {
         given("Failure", [] (Check& check) {
             expectFailure(check, VAL(false), "false");
             expectFailure(check, VAL(false) || VAL(false), "(false || false)");
-            expectFailure(check, VAL(sum3)(1, 2, 3) == 7, "(sum3(1, 2, 3) == 7)");
+
+            int a = 1;
+            expectFailure(check, VAL(sum3)(VAL(a), 2, 3) == 7, "(sum3(a, 2, 3) == 7)");
         }),
         given("Overloaded", [] (Check& check) {
             check(overloadedProxy(1) == overloaded(1));
