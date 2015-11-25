@@ -251,13 +251,8 @@ namespace Enhedron {
         given("countMatching", [] (Check& check) {
             vector<int> intVec{ 1, 2, 3 };
             auto zeroMatcher = [] (const int value) { return value == 0; };
-            check(countMatching(intVec, [] (const auto& value) { return value == 1; }) == VAL(1));
+            check(countMatching(intVec, [] (const int& value) { return value == 1; }) == VAL(1));
             check(countMatching(intVec, zeroMatcher) == VAL(0));
-            expectFailure(
-                    check,
-                    countMatching(intVec, zeroMatcher) == VAL(1),
-                    "(countMatching([1, 2, 3], <unknown>) == 1)"
-            );
             expectFailure(
                     check,
                     countMatching(intVec, VAL(zeroMatcher)) == VAL(1),
