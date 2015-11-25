@@ -221,6 +221,9 @@ namespace Enhedron {
 
     int id(int x) { return x; }
 
+    bool equals0(int x) { return x == 0; }
+    bool equals1(int x) { return x == 1; }
+
     static Test::Suite s("Assert",
         given("Success", [] (Check& check) {
             check(VAL(true));
@@ -242,13 +245,7 @@ namespace Enhedron {
             int a = 1;
             expectFailure(check, overloadedProxy(VAL(a)) == 2, "(overloaded(a) == 2)");
         }),
-        given("countEqual", [] (Check& check) {
-            vector<int> intVec{ 1, 2, 3 };
-            check(countEqual(intVec, 1) == VAL(1));
-            check(countEqual(intVec, 0) == VAL(0));
-            expectFailure(check, countEqual(intVec, 0) == VAL(1), "(countEqual([1, 2, 3], 0) == 1)");
-        }),
-        given("countMatching", [] (Check& check) {
+        given("countMatching, check it works with lambda predicates", [] (Check& check) {
             vector<int> intVec{ 1, 2, 3 };
             auto zeroMatcher = [] (const int value) { return value == 0; };
             check(countMatching(intVec, [] (const int& value) { return value == 1; }) == VAL(1));
@@ -258,6 +255,54 @@ namespace Enhedron {
                     countMatching(intVec, VAL(zeroMatcher)) == VAL(1),
                     "(countMatching([1, 2, 3], zeroMatcher) == 1)"
             );
+        }),
+        given("containerPredicates", [] (Check& check) {
+            vector<int> intVec{ 1, 2, 3 };
+            vector<int> constVec{ 1, 1, 1 };
+
+
+            check(countEqual(intVec, 1) == VAL(1));
+            check(countEqual(intVec, 0) == VAL(0));
+            expectFailure(check, countEqual(intVec, 0) == VAL(1), "(countEqual([1, 2, 3], 0) == 1)");
+
+            check(countMatching(intVec, equals1) == VAL(1));
+            check(countMatching(intVec, equals0) == VAL(0));
+            expectFailure(
+                    check,
+                    countMatching(intVec, VAL(equals0)) == VAL(1),
+                    "(countMatching([1, 2, 3], equals0) == 1)"
+            );
+            check(allOf(constVec, VAL(equals1)));
+            expectFailure(check, allOf(intVec, VAL(equals1)), "allOf([1, 2, 3], equals1)");
+
+            check(anyOf(intVec, VAL(equals1)));
+            expectFailure(check, anyOf(intVec, VAL(equals0)), "anyOf([1, 2, 3], equals0)");
+
+            check(noneOf(intVec, VAL(equals0)));
+            expectFailure(check, noneOf(intVec, VAL(equals1)), "noneOf([1, 2, 3], equals1)");
+
+            vector<int> start{1, 2};
+            vector<int> last{2, 3};
+            vector<int> larger{1, 2, 3, 4};
+            vector<int> smaller{0};
+
+            check(startsWith(intVec, intVec));
+            check(startsWith(intVec, start));
+            check( ! startsWith(intVec, last));
+            check( ! startsWith(intVec, larger));
+            expectFailure(check, startsWith(intVec, VAL(smaller)), "startsWith([1, 2, 3], smaller)");
+
+            check(endsWith(intVec, intVec));
+            check( ! endsWith(intVec, start));
+            check(endsWith(intVec, last));
+            check( ! endsWith(intVec, larger));
+            expectFailure(check, endsWith(intVec, VAL(smaller)), "endsWith([1, 2, 3], smaller)");
+
+            check(contains(intVec, intVec));
+            check(contains(intVec, start));
+            check(contains(intVec, last));
+            check( ! contains(intVec, larger));
+            expectFailure(check, contains(intVec, VAL(smaller)), "contains([1, 2, 3], smaller)");
         }),
         given("ValueSemantics", [] (Check& check) {
             MoveTracker moveTracker;
