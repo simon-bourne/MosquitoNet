@@ -256,53 +256,73 @@ namespace Enhedron {
                     "(countMatching([1, 2, 3], zeroMatcher) == 1)"
             );
         }),
-        given("containerPredicates", [] (Check& check) {
-            vector<int> intVec{ 1, 2, 3 };
-            vector<int> constVec{ 1, 1, 1 };
+        given("containerUtils", [] (Check& check) {
+            const vector<int> intVec{ 1, 2, 3 };
+            const vector<int> constVec{ 1, 1, 1, 1 };
 
+            check.when("countEqual", [&] {
+                check(countEqual(intVec, 1) == VAL(1));
+                check(countEqual(intVec, 0) == VAL(0));
+                expectFailure(check, countEqual(intVec, 0) == VAL(1), "(countEqual([1, 2, 3], 0) == 1)");
+            });
 
-            check(countEqual(intVec, 1) == VAL(1));
-            check(countEqual(intVec, 0) == VAL(0));
-            expectFailure(check, countEqual(intVec, 0) == VAL(1), "(countEqual([1, 2, 3], 0) == 1)");
+            check.when("countMatching", [&] {
+                check(countMatching(intVec, equals1) == VAL(1));
+                check(countMatching(intVec, equals0) == VAL(0));
+                expectFailure(
+                        check,
+                        countMatching(intVec, VAL(equals0)) == VAL(1),
+                        "(countMatching([1, 2, 3], equals0) == 1)"
+                );
+            });
 
-            check(countMatching(intVec, equals1) == VAL(1));
-            check(countMatching(intVec, equals0) == VAL(0));
-            expectFailure(
-                    check,
-                    countMatching(intVec, VAL(equals0)) == VAL(1),
-                    "(countMatching([1, 2, 3], equals0) == 1)"
-            );
-            check(allOf(constVec, VAL(equals1)));
-            expectFailure(check, allOf(intVec, VAL(equals1)), "allOf([1, 2, 3], equals1)");
+            check.when("allAnyOrNone", [&] {
+                check(allOf(constVec, VAL(equals1)));
+                expectFailure(check, allOf(intVec, VAL(equals1)), "allOf([1, 2, 3], equals1)");
 
-            check(anyOf(intVec, VAL(equals1)));
-            expectFailure(check, anyOf(intVec, VAL(equals0)), "anyOf([1, 2, 3], equals0)");
+                check(anyOf(intVec, VAL(equals1)));
+                expectFailure(check, anyOf(intVec, VAL(equals0)), "anyOf([1, 2, 3], equals0)");
 
-            check(noneOf(intVec, VAL(equals0)));
-            expectFailure(check, noneOf(intVec, VAL(equals1)), "noneOf([1, 2, 3], equals1)");
+                check(noneOf(intVec, VAL(equals0)));
+                expectFailure(check, noneOf(intVec, VAL(equals1)), "noneOf([1, 2, 3], equals1)");
+            });
 
-            vector<int> start{1, 2};
-            vector<int> last{2, 3};
-            vector<int> larger{1, 2, 3, 4};
-            vector<int> smaller{0};
+            check.when("length", [&] {
+                check(length(VAL(intVec)) == 3u);
+                check(length(VAL(constVec)) == 4u);
+                expectFailure(check, length(VAL(intVec)) == 0u, "(length(intVec) == 0)");
+            });
 
-            check(startsWith(intVec, intVec));
-            check(startsWith(intVec, start));
-            check( ! startsWith(intVec, last));
-            check( ! startsWith(intVec, larger));
-            expectFailure(check, startsWith(intVec, VAL(smaller)), "startsWith([1, 2, 3], smaller)");
+            check.when("equalRanges", [&] {
+                const vector<int> start{1, 2};
+                const vector<int> last{2, 3};
+                const vector<int> larger{1, 2, 3, 4};
+                const vector<int> smaller{0};
 
-            check(endsWith(intVec, intVec));
-            check( ! endsWith(intVec, start));
-            check(endsWith(intVec, last));
-            check( ! endsWith(intVec, larger));
-            expectFailure(check, endsWith(intVec, VAL(smaller)), "endsWith([1, 2, 3], smaller)");
+                check.when("startsWith", [&] {
+                    check(startsWith(intVec, intVec));
+                    check(startsWith(intVec, start));
+                    check(!startsWith(intVec, last));
+                    check(!startsWith(intVec, larger));
+                    expectFailure(check, startsWith(intVec, VAL(smaller)), "startsWith([1, 2, 3], smaller)");
+                });
 
-            check(contains(intVec, intVec));
-            check(contains(intVec, start));
-            check(contains(intVec, last));
-            check( ! contains(intVec, larger));
-            expectFailure(check, contains(intVec, VAL(smaller)), "contains([1, 2, 3], smaller)");
+                check.when("endsWith", [&] {
+                    check(endsWith(intVec, intVec));
+                    check(!endsWith(intVec, start));
+                    check(endsWith(intVec, last));
+                    check(!endsWith(intVec, larger));
+                    expectFailure(check, endsWith(intVec, VAL(smaller)), "endsWith([1, 2, 3], smaller)");
+                });
+
+                check.when("contains", [&] {
+                    check(contains(intVec, intVec));
+                    check(contains(intVec, start));
+                    check(contains(intVec, last));
+                    check(!contains(intVec, larger));
+                    expectFailure(check, contains(intVec, VAL(smaller)), "contains([1, 2, 3], smaller)");
+                });
+            });
         }),
         given("ValueSemantics", [] (Check& check) {
             MoveTracker moveTracker;
