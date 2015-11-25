@@ -61,23 +61,13 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
     }
 
     template<typename Functor>
-    void mapParameterPack(Functor&& f) {
+    void mapParameterPack(Functor&&) {
     }
 
     template<typename Functor, typename Head, typename... Args>
     void mapParameterPack(Functor&& f, const Head& head, const Args&... args) {
         f(head);
         mapParameterPack(forward<Functor>(f), args...);
-    }
-
-    template<typename Functor, typename... Args>
-    void mapTuple(Functor&& f, const tuple<Args...>& args) {
-        extractParameterPack(
-        [f(forward<Functor>(f))] (const Args&... unpackedArgs) {
-            mapParameterPack(forward<Functor>(f), unpackedArgs...);
-        },
-        args
-        );
     }
 
     template<typename T>
@@ -143,7 +133,6 @@ namespace Enhedron { namespace Util {
     using Impl::Impl_MetaProgramming::DecayArrayAndFunction;
     using Impl::Impl_MetaProgramming::DecayArrayAndFunction_t;
     using Impl::Impl_MetaProgramming::bindFirst;
-    using Impl::Impl_MetaProgramming::mapTuple;
     using Impl::Impl_MetaProgramming::mapParameterPack;
     using Impl::Impl_MetaProgramming::extractParameterPack;
 }}

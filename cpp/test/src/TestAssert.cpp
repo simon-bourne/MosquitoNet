@@ -241,9 +241,11 @@ namespace Enhedron {
             expectFailure(check, VAL(sum3)(1, 2, 3) == 7, "(sum3(1, 2, 3) == 7)");
         }),
         given("Overloaded", [] (Check& check) {
-            check(overloadedProxy(1) == VAL(overloaded(1)));
-            check(overloadedProxy(1.0) == VAL(overloaded(1.0)));
-            expectFailure(check, overloadedProxy(1) == VAL(2), "(overloaded(1) == 2)");
+            check(overloadedProxy(1) == overloaded(1));
+            check(overloadedProxy(1.0) == overloaded(1.0));
+
+            int a = 1;
+            expectFailure(check, overloadedProxy(VAL(a)) == 2, "(overloaded(a) == 2)");
         }),
         given("Template", [] (Check& check) {
             vector<int> intVec{ 1, 2, 3 };

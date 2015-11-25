@@ -59,7 +59,6 @@ namespace Enhedron { namespace Assertion {
 
 namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurable {
     using Util::StoreArgs;
-    using Util::mapTuple;
     using Util::mapParameterPack;
     using Util::extractParameterPack;
     using Util::DecayArrayAndFunction_t;
@@ -84,12 +83,24 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     using std::index_sequence_for;
     using std::get;
     using std::reference_wrapper;
+    using std::remove_reference_t;
+    using std::conditional_t;
     using std::ref;
     using std::cref;
     using std::is_function;
 
     class Expression {
     };
+
+    template<typename Arg>
+    using IsExpression = enable_if_t<is_base_of<Expression, Arg>::value>*;
+
+    template<typename Arg>
+    using IsNotExpression = enable_if_t<!is_base_of<Expression, Arg>::value> *;
+
+    template<typename Lhs, typename Rhs>
+    using EitherIsExpression = enable_if_t<
+            is_base_of<Expression, Lhs>::value || is_base_of<Expression, Rhs>::value> *;
 
     class Variable final {
     public:
@@ -198,10 +209,23 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         Rhs rhs;
     };
 
+    template<typename T, typename Enable = void>
+    struct DecayExpression {
+        using type = T;
+    };
+
+    template<typename T>
+    struct DecayExpression<T, enable_if_t<is_base_of<Expression, remove_reference_t<T>>::value>> {
+        using type = typename T::ResultType;
+    };
+
+    template<typename T>
+    using DecayExpression_t = typename DecayExpression<T>::type;
+
     template<typename Functor, typename... Args>
     class FunctionValue final : public Expression {
     public:
-        using ResultType = DecayArrayAndFunction_t<result_of_t<Functor&(Args...)>>;
+        using ResultType = DecayArrayAndFunction_t<result_of_t<Functor&(DecayExpression_t<Args>...)>>;
 
         explicit FunctionValue(string name, Functor&& functor, const char *file, int line, Args&&... args) :
                 name(move(name)),
@@ -238,11 +262,18 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             if (fileAndLine) {
                 variableList.emplace_back(name, "function", fileAndLine->file, fileAndLine->line);
             }
+
+            extractParameterPack(
+                    [this, &variableList] (const Args&... unpackedArgs) {
+                        appendParameterVariableList(variableList, unpackedArgs...);
+                    },
+                    args
+            );
         }
 
         ResultType evaluate() {
             return extractParameterPack( [this] (Args&&... extractedArgs) {
-                                             return functor(forward<Args>(extractedArgs)...);
+                                             return functor(getParameterValue(forward<Args>(extractedArgs))...);
                                          },
                                          move(args)
             );
@@ -254,16 +285,58 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     private:
         template<typename Arg1, typename Arg2, typename... Tail>
         void makeParameterNames(Out<ostringstream> parameters, const Arg1& arg1, const Arg2& arg2, const Tail&... tail) const {
-            (*parameters) << Convert<Arg1>::toString(arg1) << ", ";
+            (*parameters) << getParameterName(arg1) << ", ";
             makeParameterNames(parameters, arg2, tail...);
         }
 
         template<typename Arg>
         void makeParameterNames(Out<ostringstream> parameters, const Arg& arg) const {
-            (*parameters) << Convert<Arg>::toString(arg);
+            (*parameters) << getParameterName(arg);
         }
 
         void makeParameterNames(Out<ostringstream> parameters) const {}
+
+        template<typename Arg, IsExpression<Arg> = nullptr>
+        string getParameterName(const Arg& arg) const {
+            return arg.makeName();
+        }
+
+        template<typename Arg, IsNotExpression<Arg> = nullptr>
+        string getParameterName(const Arg& arg) const {
+            return Convert<Arg>::toString(arg);
+        }
+
+        template<typename Arg, IsExpression<Arg> = nullptr>
+        auto getParameterValue(Arg&& arg) {
+            return arg.evaluate();
+        }
+
+        template<typename Arg, IsNotExpression<Arg> = nullptr>
+        auto getParameterValue(Arg&& arg) {
+            return arg;
+        }
+
+        template<typename HeadArg, typename... TailArgs>
+        void appendParameterVariableList(
+                vector<Variable>& variableList,
+                const HeadArg& arg,
+                const TailArgs&... tailArgs
+            ) const
+        {
+            appendParameterVariable(variableList, arg);
+            appendParameterVariableList(variableList, tailArgs...);
+        }
+
+        void appendParameterVariableList(vector<Variable>& variableList) const {}
+
+        template<typename Arg, IsExpression<Arg> = nullptr>
+        void appendParameterVariable(vector<Variable>& variableList, const Arg& arg) const {
+            return arg.appendVariables(variableList);
+        }
+
+        template<typename Arg, IsNotExpression<Arg> = nullptr>
+        void appendParameterVariable(vector<Variable>&, const Arg&) const {
+        }
 
         string name;
         Functor functor;
@@ -383,16 +456,6 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     auto makeVariable(const char *name, Value&& value, const char *file, int line) {
         return VariableValueExpression<Value>(name, move(value), file, line);
     }
-
-    template<typename Arg>
-    using IsExpression = enable_if_t<is_base_of<Expression, Arg>::value>*;
-
-    template<typename Arg>
-    using IsNotExpression = enable_if_t<!is_base_of<Expression, Arg>::value> *;
-
-    template<typename Lhs, typename Rhs>
-    using EitherIsExpression = enable_if_t<
-            is_base_of<Expression, Lhs>::value || is_base_of<Expression, Rhs>::value> *;
 
     template<typename Operation, typename Lhs, typename Rhs, pair<IsExpression<Lhs>, IsExpression<Rhs>> * = nullptr>
     auto apply(const char *operationName, Operation operation, const Lhs &lhs, const Rhs &rhs) {
