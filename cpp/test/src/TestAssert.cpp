@@ -219,13 +219,6 @@ namespace Enhedron {
         )(forward<Args>(args)...);
     }
 
-    static auto countProxy = makeFunction(
-        "count",
-        [] (auto&& container, auto&& value) {
-            return count(container.begin(), container.end(), forward<decltype(value)>(value));
-        }
-    );
-
     int id(int x) { return x; }
 
     static Test::Suite s("Assert",
@@ -249,11 +242,27 @@ namespace Enhedron {
             int a = 1;
             expectFailure(check, overloadedProxy(VAL(a)) == 2, "(overloaded(a) == 2)");
         }),
-        given("Template", [] (Check& check) {
+        given("countEqual", [] (Check& check) {
             vector<int> intVec{ 1, 2, 3 };
-            check(countProxy(intVec, 1) == VAL(1));
-            check(countProxy(intVec, 0) == VAL(0));
-            expectFailure(check, countProxy(intVec, 0) == VAL(1), "(count([1, 2, 3], 0) == 1)");
+            check(countEqual(intVec, 1) == VAL(1));
+            check(countEqual(intVec, 0) == VAL(0));
+            expectFailure(check, countEqual(intVec, 0) == VAL(1), "(countEqual([1, 2, 3], 0) == 1)");
+        }),
+        given("countMatching", [] (Check& check) {
+            vector<int> intVec{ 1, 2, 3 };
+            auto zeroMatcher = [] (const auto& value) { return value == 0; };
+            check(countMatching(intVec, [] (const auto& value) { return value == 1; }) == VAL(1));
+            check(countMatching(intVec, zeroMatcher) == VAL(0));
+            expectFailure(
+                    check,
+                    countMatching(intVec, zeroMatcher) == VAL(1),
+                    "(countMatching([1, 2, 3], <unknown>) == 1)"
+            );
+            expectFailure(
+                    check,
+                    countMatching(intVec, VAL(zeroMatcher)) == VAL(1),
+                    "(countMatching([1, 2, 3], zeroMatcher) == 1)"
+            );
         }),
         given("ValueSemantics", [] (Check& check) {
             MoveTracker moveTracker;

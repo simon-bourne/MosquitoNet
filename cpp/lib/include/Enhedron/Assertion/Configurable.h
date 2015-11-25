@@ -15,13 +15,31 @@
 #include<tuple>
 
 namespace Enhedron { namespace Assertion {
+    template <typename T>
+    class HasOutputOperator
+    {
+        template <typename C, typename = decltype(std::declval<std::ostream&>() << std::declval<const C&>())>
+        static std::true_type test(int);
+        template <typename C>
+        static std::false_type test(...);
+
+    public:
+        static constexpr bool value = decltype(test<T>(0))::value;
+    };
+
     template<typename Value, typename Enable = void>
     struct Convert {
+        template<typename T = Value, std::enable_if_t<HasOutputOperator<T>::value>* = nullptr>
         static std::string toString(const Value &value) {
             std::ostringstream valueString;
             valueString << value;
 
             return valueString.str();
+        }
+
+        template<typename T = Value, std::enable_if_t< ! HasOutputOperator<T>::value>* = nullptr>
+        static std::string toString(const Value &value) {
+            return "<unknown>";
         }
     };
 
