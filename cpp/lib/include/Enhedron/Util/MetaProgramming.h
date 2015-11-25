@@ -57,7 +57,7 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_MetaProgra
 
     template<typename Functor, typename... Args>
     auto extractParameterPack(Functor&& f, tuple<Args...>&& args) {
-        return extractParameterPack(forward<Functor>(f), index_sequence_for<Args...>(), forward<Args>(args)...);
+        return extractParameterPack(forward<Functor>(f), index_sequence_for<Args...>(), forward<tuple<Args...>>(args));
     }
 
     template<typename Functor>

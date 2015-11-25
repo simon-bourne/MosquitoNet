@@ -211,11 +211,17 @@ namespace Enhedron {
         return x + 1.0;
     }
 
-    static const auto overloadedProxy = [] (auto&&... args) { return overloaded(forward<decltype(args)>(args)...); };
+    static auto overloadedProxy = makeFunction(
+        "overloaded",
+        [] (auto&&... args) { return overloaded(forward<decltype(args)>(args)...); }
+    );
 
-    static const auto countProxy = [] (const auto& container, auto&& value) {
-        return count(container.begin(), container.end(), forward<decltype(value)>(value));
-    };
+    static auto countProxy = makeFunction(
+        "count",
+        [] (auto&& container, auto&& value) {
+            return count(container.begin(), container.end(), forward<decltype(value)>(value));
+        }
+    );
 
     int id(int x) { return x; }
 
@@ -235,15 +241,15 @@ namespace Enhedron {
             expectFailure(check, VAL(sum3)(1, 2, 3) == 7, "(sum3(1, 2, 3) == 7)");
         }),
         given("Overloaded", [] (Check& check) {
-            check(VAL(overloadedProxy)(1) == overloaded(1));
-            check(VAL(overloadedProxy)(1.0) == overloaded(1.0));
-            expectFailure(check, VAL(overloadedProxy)(1) == 2, "(overloadedProxy(1) == 2)");
+            check(overloadedProxy(1) == VAL(overloaded(1)));
+            check(overloadedProxy(1.0) == VAL(overloaded(1.0)));
+            expectFailure(check, overloadedProxy(1) == VAL(2), "(overloaded(1) == 2)");
         }),
         given("Template", [] (Check& check) {
             vector<int> intVec{ 1, 2, 3 };
-            check(VAL(countProxy)(intVec, 1) == 1);
-            check(VAL(countProxy)(intVec, 0) == 0);
-            expectFailure(check, VAL(countProxy)(intVec, 0) == 1, "(countProxy([1, 2, 3], 0) == 1)");
+            check(countProxy(intVec, 1) == VAL(1));
+            check(countProxy(intVec, 0) == VAL(0));
+            expectFailure(check, countProxy(intVec, 0) == VAL(1), "(count([1, 2, 3], 0) == 1)");
         }),
         given("ValueSemantics", [] (Check& check) {
             MoveTracker moveTracker;
@@ -284,7 +290,7 @@ namespace Enhedron {
             static_assert(
                 is_same<
                     decltype(VAL(id)(a + b)),
-                    Conf::Function<reference_wrapper<int(int)>, int>
+                    Conf::FunctionValue<reference_wrapper<int(int)>, int>
                 >::value,
                 "Temporaries are stored by value"
             );
@@ -292,7 +298,7 @@ namespace Enhedron {
             static_assert(
                 is_same<
                     decltype(VAL(id)(a)),
-                    Conf::Function<reference_wrapper<int(int)>, int&>
+                    Conf::FunctionValue<reference_wrapper<int(int)>, int&>
                 >::value,
                 "Values are stored by reference"
             );

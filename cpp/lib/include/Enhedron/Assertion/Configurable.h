@@ -32,6 +32,20 @@ namespace Enhedron { namespace Assertion {
         }
     };
 
+    template<>
+    struct Convert<std::string> {
+        static inline std::string toString(const std::string& s) {
+            return "\"" + s + "\"";
+        }
+    };
+
+    template<>
+    struct Convert<char*> {
+        static inline std::string toString(const char* s) {
+            return "\"" + std::string(s) + "\"";
+        }
+    };
+
     template<typename Value>
     struct Convert<Value, std::enable_if_t<std::is_enum<std::remove_reference_t<Value>>::value>> {
         static std::string toString(Value value) {
@@ -110,7 +124,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
         void appendVariables(vector<Variable> &) const { }
 
-        const Value& evaluate() const {
+        const Value& evaluate() {
             return value;
         }
 
@@ -138,7 +152,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             arg.appendVariables(variableList);
         }
 
-        ResultType evaluate() const {
+        ResultType evaluate() {
             return functor(arg.evaluate());
         }
 
@@ -173,7 +187,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             rhs.appendVariables(variableList);
         }
 
-        ResultType evaluate() const {
+        ResultType evaluate() {
             return functor(lhs.evaluate(), rhs.evaluate());
         }
 
@@ -185,15 +199,20 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     };
 
     template<typename Functor, typename... Args>
-    class Function final : public Expression {
+    class FunctionValue final : public Expression {
     public:
         using ResultType = DecayArrayAndFunction_t<result_of_t<Functor&(Args...)>>;
 
-        explicit Function(const char *name, Functor&& functor, const char *file, int line, Args&&... args) :
-                name(name),
+        explicit FunctionValue(string name, Functor&& functor, const char *file, int line, Args&&... args) :
+                name(move(name)),
                 functor(move(functor)),
-                file(file),
-                line(line),
+                fileAndLine(FileLine{file, line}),
+                args(forward<Args>(args)...)
+        {}
+
+        explicit FunctionValue(string name, Functor&& functor, Args&&... args) :
+                name(move(name)),
+                functor(move(functor)),
                 args(forward<Args>(args)...)
         {}
 
@@ -216,14 +235,16 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
         }
 
         void appendVariables(vector<Variable>& variableList) const {
-            variableList.emplace_back(name, "function", file, line);
+            if (fileAndLine) {
+                variableList.emplace_back(name, "function", fileAndLine->file, fileAndLine->line);
+            }
         }
 
-        ResultType evaluate() const {
-            return extractParameterPack( [this] (const Args&... extractedArgs) {
-                    return functor(extractedArgs...);
-                },
-                args
+        ResultType evaluate() {
+            return extractParameterPack( [this] (Args&&... extractedArgs) {
+                                             return functor(forward<Args>(extractedArgs)...);
+                                         },
+                                         move(args)
             );
         }
 
@@ -244,16 +265,36 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
         void makeParameterNames(Out<ostringstream> parameters) const {}
 
-        template<typename Head, typename... Tail>
-        void addParameterStrings() {}
-
-        const char *name;
+        string name;
         Functor functor;
-        const char* file;
-        int line;
+
+        struct FileLine {
+            const char* file;
+            int line;
+        };
+
+        optional<FileLine> fileAndLine;
         optional<string> exceptionMessage;
         tuple<Args...> args;
     };
+
+    template<typename Functor>
+    class Function final {
+        string name_;
+        Functor functor_;
+    public:
+        Function(string name, Functor&& functor) : name_(move(name)), functor_(functor) {}
+
+        template<typename... Args>
+        auto operator()(Args&&... args) {
+            return FunctionValue<Functor, Args...>(name_, Functor(functor_), forward<Args>(args)...);
+        }
+    };
+
+    template<typename Functor>
+    auto makeFunction(string name, Functor&& functor) {
+        return Function<Functor>(move(name), forward<Functor>(functor));
+    }
 
     template<typename Value>
     class VariableRefExpression final : public Expression {
@@ -274,13 +315,13 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             variableList.emplace_back(variableName, Convert<Value>::toString(value), file, line);
         }
 
-        ResultType evaluate() const {
+        ResultType evaluate() {
             return value;
         }
 
         template<typename... Args>
         auto operator()(Args&&... args) {
-            return Function<reference_wrapper<Value>, Args...>(
+            return FunctionValue<reference_wrapper<Value>, Args...>(
                     variableName, cref(value), file, line, forward<Args>(args)...
                 );
         }
@@ -311,14 +352,14 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             variableList.emplace_back(variableName, Convert<Value>::toString(value), file, line);
         }
 
-        ResultType evaluate() const {
+        ResultType evaluate() {
             return value;
         }
 
         // Only call this once! It will move the underlying value.
         template<typename... Args>
-        Function<Value, Args...> operator()(Args&&... args) {
-            return Function<Value, Args...>(variableName, move(value), file, line, forward<Args>(args)...);
+        FunctionValue<Value, Args...> operator()(Args&&... args) {
+            return FunctionValue<Value, Args...>(variableName, move(value), file, line, forward<Args>(args)...);
         }
 
     private:
@@ -571,7 +612,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     >
     bool CheckThrowsWithFailureHandler(
             Out<FailureHandler> failureHandler,
-            Function<Functor, Args...> expression,
+            FunctionValue<Functor, Args...> expression,
             ContextVariableList... contextVariableList
     ) {
         try {
@@ -600,8 +641,10 @@ namespace Enhedron { namespace Assertion {
     using Impl::Configurable::IsExpression;
     using Impl::Configurable::Expression;
     using Impl::Configurable::Variable;
+    using Impl::Configurable::makeFunction;
     using Impl::Configurable::ProcessFailure;
     using Impl::Configurable::FailureHandler;
+    using Impl::Configurable::Function;
 }}
 
 #define M_ENHEDRON_VAL(expression) \
