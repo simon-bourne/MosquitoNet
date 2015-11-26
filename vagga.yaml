@@ -43,4 +43,18 @@ commands:
     work-dir: .
     run: |
       build/clang/test-harness "$@"
+  integration-test: !Command
+    description: Run tests
+    accepts-arguments: true
+    container: build
+    work-dir: .
+    run: |
+      build/gcc/integration-test "$@"
+  integration-test-clang: !Command
+    description: Run tests
+    accepts-arguments: true
+    container: build
+    work-dir: .
+    run: |
+      build/clang/integration-test "$@"
 

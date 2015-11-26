@@ -24,3 +24,5 @@ add_executable(test-harness
         cpp/test/src/TestContainer.cpp
         cpp/test/src/TestAssert.cpp
         cpp/test/src/TestCommandLine.cpp)
+
+add_executable(integration-test cpp/test/src/TestHarness.cpp cpp/test/src/IntegrationTest.cpp)

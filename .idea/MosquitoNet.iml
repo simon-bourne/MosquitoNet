@@ -4,6 +4,7 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/CMakeLists.txt" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/cpp/CMakeLists.MosquitoNet.txt" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/cpp/test/src/IntegrationTest.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/cpp/test/src/TestAssert.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/cpp/test/src/TestCommandLine.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/cpp/test/src/TestContainer.cpp" isTestSource="false" />
