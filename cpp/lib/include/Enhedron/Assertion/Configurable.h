@@ -9,22 +9,58 @@
 #include <sstream>
 #include <string>
 #include <utility>
-#include <vector>
 #include <stdexcept>
 #include <functional>
-#include<tuple>
+#include <tuple>
+
+#include <deque>
+#include <forward_list>
+#include <list>
+#include <map>
+#include <queue>
+#include <set>
+#include <stack>
+#include <type_traits>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace Enhedron { namespace Assertion {
     template <typename T>
-    class HasOutputOperator
-    {
-        template <typename C, typename = decltype(std::declval<std::ostream&>() << std::declval<const C&>())>
-        static std::true_type test(int);
-        template <typename C>
-        static std::false_type test(...);
+    class HasOutputOperator {
+        template <typename U, typename = decltype(std::declval<std::ostream&>() << std::declval<const U&>())>
+        static std::integral_constant<bool, true> test();
+
+        template <typename U, typename... Args>
+        static std::integral_constant<bool, false> test(Args...);
 
     public:
-        static constexpr bool value = decltype(test<T>(0))::value;
+        static constexpr bool value = decltype(test<T>())::value;
+    };
+
+    template<typename T>
+    class IsStlContainer {
+        using True = std::integral_constant<bool, true>;
+        template <typename U>       struct test : std::false_type {};
+
+        template <typename... Args> struct test<std::array             <Args...>> : True{};
+        template <typename... Args> struct test<std::deque             <Args...>> : True{};
+        template <typename... Args> struct test<std::forward_list      <Args...>> : True{};
+        template <typename... Args> struct test<std::list              <Args...>> : True{};
+        template <typename... Args> struct test<std::multiset          <Args...>> : True{};
+        template <typename... Args> struct test<std::map               <Args...>> : True{};
+        template <typename... Args> struct test<std::multimap          <Args...>> : True{};
+        template <typename... Args> struct test<std::priority_queue    <Args...>> : True{};
+        template <typename... Args> struct test<std::queue             <Args...>> : True{};
+        template <typename... Args> struct test<std::set               <Args...>> : True{};
+        template <typename... Args> struct test<std::stack             <Args...>> : True{};
+        template <typename... Args> struct test<std::unordered_set     <Args...>> : True{};
+        template <typename... Args> struct test<std::unordered_multiset<Args...>> : True{};
+        template <typename... Args> struct test<std::unordered_map     <Args...>> : True{};
+        template <typename... Args> struct test<std::unordered_multimap<Args...>> : True{};
+        template <typename... Args> struct test<std::vector            <Args...>> : True{};
+    public:
+        static constexpr bool value = test<std::decay_t<T>>::value;
     };
 
     template<typename Value, typename Enable = void>
@@ -57,8 +93,8 @@ namespace Enhedron { namespace Assertion {
         }
     };
 
-    template<>
-    struct Convert<char*> {
+    template<typename Value>
+    struct Convert<Value, std::enable_if_t<std::is_same<std::decay_t<Value>, char*>::value>> {
         static inline std::string toString(const char* s) {
             return "\"" + std::string(s) + "\"";
         }
@@ -80,6 +116,28 @@ namespace Enhedron { namespace Assertion {
             return "<function>";
         }
     };
+
+    template<typename Container>
+    struct Convert<Container, std::enable_if_t<IsStlContainer<Container>::value>> {
+        static inline std::string toString(const Container& value) {
+            std::string result("[");
+            bool isFirst = true;
+
+            for (const auto& element : value) {
+                if ( ! isFirst) {
+                    result += ", ";
+                }
+
+                isFirst = false;
+                result += Convert<typename Container::value_type>::toString(element);
+            }
+
+            result += "]";
+
+            return result;
+        }
+    };
+
 }}
 
 namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurable {
@@ -617,7 +675,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
     struct FailureHandler {
         virtual ~FailureHandler() {};
-        virtual void handleCheckFailure(const string &expressionText, const vector <Variable> &variableList) = 0;
+        virtual void fail(const string &expressionText, const vector <Variable> &variableList) = 0;
     };
 
     template<
@@ -638,7 +696,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
     template<typename Expression>
     void ProcessFailureImpl(Out<FailureHandler> failureHandler, Expression expression, vector<Variable> variableList) {
-        failureHandler->handleCheckFailure(expression.makeName(), move(variableList));
+        failureHandler->fail(expression.makeName(), move(variableList));
     }
 
     template<typename Expression, typename... ContextVariableList>

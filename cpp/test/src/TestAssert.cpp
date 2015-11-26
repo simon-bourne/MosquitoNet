@@ -32,29 +32,6 @@ namespace Enhedron {
 
     using namespace Assertion;
 
-    namespace Assertion {
-        template<typename T>
-        struct Convert<vector<T>> {
-            static inline string toString(const vector<T>& value) {
-                string result("[");
-                bool isFirst = true;
-
-                for (const auto& element : value) {
-                    if ( ! isFirst) {
-                        result += ", ";
-                    }
-
-                    isFirst = false;
-                    result += Convert<T>::toString(element);
-                }
-
-                result += "]";
-
-                return result;
-            }
-        };
-    }
-
     class RecordFailures final: public FailureHandler {
     public:
         struct Failure {
@@ -66,7 +43,7 @@ namespace Enhedron {
     public:
         virtual ~RecordFailures() override {}
 
-        virtual void handleCheckFailure(const string& expressionText, const vector<Variable>& variableList) override {
+        virtual void fail(const string& expressionText, const vector<Variable>& variableList) override {
             if (failure_) {
                 throw runtime_error("Multiple failures");
             }
@@ -333,7 +310,7 @@ namespace Enhedron {
             VAL([] (const MoveTracker&) {}) (moveTracker);
             check("We don't steal function arguments", ! VAL(moveTracker.moved()));
 
-            // Need to run through sanitizers to check we don't store refs to temporaries
+            // gcc sanitizers will hopefully pick up any stored refs to temporaries
             int a = 1;
             int b = 1;
             check("We don't store refs to temporaries", VAL(a + b) == 2);

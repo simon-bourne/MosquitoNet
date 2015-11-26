@@ -169,10 +169,14 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
     class Option final {
         Name name_;
         string valueName_;
+        optional<string> defaultValue_;
     public:
         using Value = ValueType;
-        
+
         Option(Name name, string valueName) : name_(move(name)), valueName_(move(valueName)) {}
+
+        Option(Name name, string valueName, string defaultValue) :
+                name_(move(name)), valueName_(move(valueName)), defaultValue_(move(defaultValue)) {}
 
         template<typename Functor>
         void forEachName(Functor&& functor) const {
@@ -196,6 +200,8 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
         void showDescription(Out<ostream> output, size_t width, size_t padding) const {
             name_.showDescription(output, width, padding);
         }
+
+        optional<string> defaultValue() const { return defaultValue_; }
     };
 
     class Flag final: public Name {
@@ -323,12 +329,26 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                 paramValues.insert(paramValues.end(), newValues.begin(), newValues.end());
             });
 
+            string value;
+
             if (paramValues.empty()) {
-                *errorOut_ << "Error: No value for " + param.longName() << "\n";
+                if (param.defaultValue()) {
+                    value = *param.defaultValue();
+                }
+                else {
+                    *errorOut_ << "Error: No value for " + param.longName() << "\n";
+
+                    return ExitStatus::CONFIG;
+                }
+            }
+            else {
+                value = paramValues.front();
             }
 
             if (paramValues.size() > 1) {
                 *errorOut_ << "Error: Multiple values for " + param.longName() << "\n";
+
+                return ExitStatus::CONFIG;
             }
 
             return runImpl(
@@ -337,7 +357,7 @@ namespace Enhedron { namespace CommandLine { namespace Impl { namespace Impl_Par
                     move(setFlags),
                     bindFirst(
                             forward<Functor>(functor),
-                            move(paramValues.front()),
+                            move(value),
                             index_sequence_for<Option<string>, ParamTail...>()
                     ),
                     forward<ParamTail>(paramTail)...

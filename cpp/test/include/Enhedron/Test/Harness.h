@@ -7,6 +7,9 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <algorithm>
+#include <locale>
+#include <cctype>
 
 namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
     using std::string;
@@ -14,14 +17,35 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
     using std::vector;
     using std::runtime_error;
     using std::find;
+    using std::tolower;
+    using std::locale;
+    using std::transform;
 
     using CommandLine::ExitStatus;
     using CommandLine::Flag;
+    using CommandLine::Option;
+    using CommandLine::Name;
     using CommandLine::Arguments;
 
     using Container::StringTree;
 
-    ExitStatus runTests(bool listOnly, vector<string> pathList) {
+    Verbosity parseVerbosity(string v) {
+        transform(v.begin(), v.end(), v.begin(),
+                  [](char c) { return tolower(c, locale()); } );
+
+        if (v == "silent") return Verbosity::SILENT;
+        if (v == "summary") return Verbosity::SUMMARY;
+        if (v == "contexts") return Verbosity::CONTEXTS;
+        if (v == "fixtures") return Verbosity::FIXTURES;
+        if (v == "sections") return Verbosity::SECTIONS;
+        if (v == "exhaustive_sections") return Verbosity::EXHAUSTIVE_SECTIONS;
+        if (v == "checks") return Verbosity::CHECKS;
+        if (v == "variables") return Verbosity::VARIABLES;
+
+        throw runtime_error("Unknown verbosity \"" + v + "\"");
+    }
+
+    ExitStatus runTests(bool listOnly, string verbosityString, vector<string> pathList) {
         StringTree pathTree;
 
         for (auto& path : pathList) {
@@ -57,11 +81,13 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
             childPtr->clear();
         }
 
+        Verbosity verbosity = parseVerbosity(verbosityString);
+
         if (listOnly) {
-            Test::list(pathTree);
+            Test::list(pathTree, verbosity);
         }
         else {
-            if ( ! Test::run(pathTree)) {
+            if ( ! Test::run(pathTree, verbosity)) {
                 return ExitStatus::SOFTWARE;
             }
         }
@@ -74,7 +100,14 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
         args.setDescription("Test Harness");
         args.setPositionalDescription("TEST_PATH");
 
-        return args.run(argc, argv, runTests, Flag('l', "list", "List tests instead of running them."));
+        return args.run(
+                argc, argv, runTests,
+                Flag('l', "list", "List tests instead of running them."),
+                Option<string>(Name('v', "verbosity", "Set the verbosity"),
+                               "silent|summary|contexts|fixtures|sections|exhaustive-sections|checks|variables",
+                               "contexts"
+                )
+        );
     }
 }}}}
 

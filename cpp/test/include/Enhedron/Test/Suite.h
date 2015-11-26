@@ -51,28 +51,6 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using std::runtime_error;
     using std::cout;
 
-    class Stats {
-    public:
-        Stats() = default;
-
-        static Stats ok() { return Stats(1, 0); }
-        static Stats fail() { return Stats(1, 1); }
-
-        Stats& operator+=(Stats rhs) {
-            ran_ += rhs.ran_;
-            failed_ += rhs.failed_;
-            return *this;
-        }
-
-        auto ran() const { return ran_; }
-        auto failed() const { return failed_; }
-    private:
-        Stats(uint64_t ran, uint64_t failed) : ran_(ran), failed_(failed) {}
-
-        uint64_t ran_ = 0;
-        uint64_t failed_ = 0;
-    };
-
     class Context: public NoCopy {
     public:
         virtual ~Context() {}
@@ -102,7 +80,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 stats += context->run(pathTree, results);
             }
 
-            results->finish(stats.ran(), stats.failed());
+            results->finish(stats);
             return stats;
         }
     private:
@@ -203,82 +181,50 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             return top.current == top.index + 1;
         }
 
+        Out<ResultTest> results_;
+        Stats stats_;
     public:
+        WhenRunner(Out<ResultTest> results) : results_(results) {}
+
         template<typename Functor, typename... Args>
-        void run(Functor&& functor, Args&&... args) {
-            whenStack.clear();
-            whenDepth = 0;
-
-            do {
-                for (auto& element : whenStack) {
-                    element.current = 0;
-                }
-
-                functor(forward<Args>(args)...);
-
-                while ( ! whenStack.empty() && topWhenDone()) {
-                    whenStack.pop_back();
-                }
-
-                if ( ! whenStack.empty()) {
-                    ++whenStack.back().index;
-                }
-            } while ( ! whenStack.empty());
-        }
+        void run(Functor&& functor, Args&&... args);
 
         template<typename Functor>
-        void when(Functor&& functor) {
+        void when(string description, Functor&& functor) {
             if (whenStack.size() <= whenDepth) {
                 whenStack.push_back(StackElement{});
             }
 
+            Finally stack([&] { ++whenStack[whenDepth].current; });
+
             if (whenStack[whenDepth].index == whenStack[whenDepth].current) {
                 ++whenDepth;
-                functor();
-                --whenDepth; // TODO: Exception safety.
-            }
 
-            ++whenStack[whenDepth].current;
+                Finally depth([&] { --whenDepth; });
+                auto whenResults = results_->section("when", move(description));
+                stats_.addTest();
+
+                functor();
+            }
         }
+
+        Stats stats() const { return stats_; }
     };
 
     class Check : public NoCopy {
-        struct Status {
-            bool failed;
-            string description;
-        };
-
         Out<ResultTest> result_;
-        vector<Status> statusList;
         Out<WhenRunner> whenRunner_;
+        Stats stats_;
 
-        friend Stats logFailures(const Check& checker, const string& name, Out<ResultTest> results);
-
-        bool logChecks(const string& name, Out<ResultTest> results) const {
-            bool failed = false;
-
-            for (const auto& status : statusList) {
-                if (status.failed) {
-                    failed = true;
-                    results->failCheck(status.description);
-                }
-                else {
-                    results->passCheck(status.description);
-                }
-            }
-
-            return failed;
+        friend inline Stats checkStats(const Check& check) {
+            return check.stats_;
         }
     public:
         Check(Out<ResultTest> result, Out<WhenRunner> whenRunner) : result_(result), whenRunner_(whenRunner) {}
 
         template<typename Functor>
         void when(string description, Functor&& functor) {
-            whenRunner_->when(forward<Functor>(functor));
-        }
-
-        void addException(const exception& e) {
-            statusList.emplace_back(Status{ true, e.what()} );
+            whenRunner_->when(move(description), forward<Functor>(functor));
         }
 
         template<
@@ -292,12 +238,19 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 ContextVariableList... contextVariableList
         )
         {
+            stats_.addCheck();
             auto ok = CheckWithFailureHandler(
                     result_,
                     move(expression),
                     move(contextVariableList)...
             );
-            statusList.push_back(Status { ! ok, move(description) });
+
+            if (ok) {
+                result_->pass(move(description));
+            }
+            else {
+                stats_.failCheck();
+            }
 
             return ok;
         }
@@ -346,25 +299,63 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                     move(expression),
                     move(contextVariableList)...
             );
-            statusList.push_back(Status { ! ok, move(description) });
+
+            stats_.addCheck();
+
+            if (ok) {
+                result_->pass(move(description));
+            }
+            else {
+                stats_.failCheck();
+            }
 
             return ok;
         }
 
         template<typename Expression, typename... ContextVariableList>
         void fail(Expression expression, ContextVariableList... contextVariableList) {
-            statusList.push_back(Status {true, expression.evaluate()});
             ProcessFailure(result_, move(expression), move(contextVariableList)...);
+            stats_.failCheck();
         }
     };
 
-    inline Stats logFailures(const Check& checker, const string& name, Out<ResultTest> results) {
-        if (checker.logChecks(name, results)) {
-            return Stats::fail();
+    template<typename Functor, typename... Args>
+    void WhenRunner::run(Functor&& functor, Args&&... args) {
+        whenStack.clear();
+        whenDepth = 0;
+        stats_.addFixture();
+
+        do {
+            for (auto& element : whenStack) {
+                element.current = 0;
+            }
+
+            Check check(results_, out(*this));
+
+            try {
+                functor(check, forward<Args>(args)...);
+            }
+            catch (const exception& e) {
+                results_->failByException(e);
+                stats_.failTest();
+            }
+
+            stats_ += checkStats(check);
+
+            while ( ! whenStack.empty() && topWhenDone()) {
+                whenStack.pop_back();
+            }
+
+            if ( ! whenStack.empty()) {
+                ++whenStack.back().index;
+            }
+        } while ( ! whenStack.empty());
+
+        if (stats_.tests() == 0) {
+            stats_.addTest();
         }
-        
-        return Stats::ok();
     }
+
 
     template<typename Functor, typename... Args>
     class Runner final: public Context {
@@ -409,17 +400,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
         Stats operator()(const string& name, Out<ResultContext> results, Args&&... args) {
             auto test = results->test(name);
-            WhenRunner whenRunner;
-            Check check(out(*test), out(whenRunner));
+            WhenRunner whenRunner(out(*test));
+            whenRunner.run(runTest, forward<Args>(args)...);
 
-            try {
-                whenRunner.run(runTest, check, forward<Args>(args)...);
-            }
-            catch (const exception& e) {
-                check.addException(e);
-            }
-
-            return logFailures(check, name, out(*test));
+            return whenRunner.stats();
         }
     };
 
@@ -458,17 +442,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
         template<typename BoundFunctor>
         static Stats exhaustive(BoundFunctor&& functor, const string& name, Out<ResultTest> test) {
-            WhenRunner whenRunner;
-            Check check(test, out(whenRunner));
+            WhenRunner whenRunner(out(*test));
+            whenRunner.run(forward<BoundFunctor>(functor));
 
-            try {
-                whenRunner.run(forward<BoundFunctor>(functor), ref(check));
-            }
-            catch (const exception& e) {
-                check.addException(e);
-            }
-
-            return logFailures(check, name, out(*test));
+            return whenRunner.stats();
         }
 
         template<typename BoundFunctor, typename Container, typename... BoundArgs>
@@ -542,16 +519,18 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     }
 
     inline bool run(const StringTree& pathTree, Out<Results> results) {
-        return Register::run(pathTree, results).failed() == 0;
+        auto stats = Register::run(pathTree, results);
+
+        return stats.failedTests() == 0 && stats.failedChecks() == 0;
     }
 
-    inline void list(const StringTree& pathTree) {
-        HumanResults results(out(cout));
+    inline void list(const StringTree& pathTree, Verbosity verbosity) {
+        HumanResults results(out(cout), verbosity);
         list(pathTree, out(results));
     }
 
-    inline bool run(const StringTree& pathTree) {
-        HumanResults results(out(cout));
+    inline bool run(const StringTree& pathTree, Verbosity verbosity) {
+        HumanResults results(out(cout), verbosity);
         return run(pathTree, out(results));
     }
 }}}}
