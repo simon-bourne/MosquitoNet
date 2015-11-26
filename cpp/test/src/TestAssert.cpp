@@ -45,9 +45,9 @@ namespace Enhedron {
 
         virtual bool notifyPassing() const override { return false; }
 
-        virtual void pass(const string &expressionText, const vector <Variable> &variableList) override { }
+        virtual void pass(optional<string> description, const string &expressionText, const vector <Variable> &variableList) override { }
 
-        virtual void fail(const string& expressionText, const vector<Variable>& variableList) override {
+        virtual void fail(optional<string> description, const string& expressionText, const vector<Variable>& variableList) override {
             if (failure_) {
                 throw runtime_error("Multiple failures");
             }

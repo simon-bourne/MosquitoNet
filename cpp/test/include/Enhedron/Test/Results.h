@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Enhedron/Util.h"
+#include "Enhedron/Util/Optional.h"
 
 #include <memory>
 #include <string>
@@ -20,6 +21,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
     using Assertion::FailureHandler;
     using Assertion::Variable;
+    using Util::optional;
 
     class Stats {
         uint64_t fixtures_ = 0;
@@ -54,7 +56,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
     class ResultTest: public NoCopy, public FailureHandler {
     public:
         virtual ~ResultTest() {}
-        virtual unique_ptr<ResultTest> section(string name, string description) = 0;
+        virtual unique_ptr<ResultTest> section(string description) = 0;
         virtual void failByException(const exception& e) = 0;
     };
 
@@ -80,6 +82,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
         SECTIONS,
         EXHAUSTIVE_SECTIONS,
         CHECKS,
+        CHECKS_EXPRESSION,
         VARIABLES
     };
 
@@ -106,10 +109,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
                 outputStream_(outputStream), depth_(depth), verbosity_(verbosity)
         {}
 
-        virtual unique_ptr<ResultTest> section(string name, string description) override {
+        virtual unique_ptr<ResultTest> section(string description) override {
             if (verbosity_ >= Verbosity::SECTIONS) {
                 indent(1);
-                (*outputStream_) << name << ": " << description << "\n";
+                (*outputStream_) << "when: " << description << "\n";
             }
 
             return make_unique<HumanResultTest>(outputStream_, depth_ + 1, verbosity_);
@@ -117,15 +120,26 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
         virtual bool notifyPassing() const override { return verbosity_ >= Verbosity::CHECKS; }
 
-        virtual void fail(const string &expressionText, const vector <Variable> &variableList) override {
+        virtual void fail(optional<string> description, const string &expressionText, const vector <Variable> &variableList) override {
+            // TODO: Print out test details
             indent(1);
-            (*outputStream_) << "Check failed: " << expressionText << "\n";
+            (*outputStream_) << "CHECK FAILED: " << expressionText << "\n";
             printVariables(variableList);
         }
 
-        virtual void pass(const string& description, const vector <Variable> &variableList) override {
+        virtual void pass(optional<string> description, const string &expressionText, const vector <Variable> &variableList) override {
             indent(1);
-            (*outputStream_) << "then: " << description << endl;
+            (*outputStream_) << "then";
+
+            if (description) {
+                (*outputStream_) << ": " << *description;
+            }
+
+            if (verbosity_ >= Verbosity::CHECKS_EXPRESSION) {
+                (*outputStream_) << ": " << expressionText;
+            }
+
+            (*outputStream_) << "\n";
 
             if (verbosity_ >= Verbosity::VARIABLES) {
                 printVariables(variableList);
@@ -134,7 +148,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
         virtual void failByException(const exception& e) override {
             indent(0);
-            (*outputStream_) << "TEST FAILED! Exception: " << e.what() << endl;
+            (*outputStream_) << "TEST FAILED WITH EXCEPTION: " << e.what() << endl;
         }
     };
 

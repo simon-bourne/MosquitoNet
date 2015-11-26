@@ -40,6 +40,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
         if (v == "sections") return Verbosity::SECTIONS;
         if (v == "exhaustive_sections") return Verbosity::EXHAUSTIVE_SECTIONS;
         if (v == "checks") return Verbosity::CHECKS;
+        if (v == "checks_expression") return Verbosity::CHECKS_EXPRESSION;
         if (v == "variables") return Verbosity::VARIABLES;
 
         throw runtime_error("Unknown verbosity \"" + v + "\"");
@@ -104,7 +105,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
                 argc, argv, runTests,
                 Flag('l', "list", "List tests instead of running them."),
                 Option<string>(Name('v', "verbosity", "Set the verbosity"),
-                               "silent|summary|contexts|fixtures|sections|exhaustive-sections|checks|variables",
+                               "silent|summary|contexts|fixtures|sections|exhaustive-sections|checks_description|checks_expression|variables",
                                "contexts"
                 )
         );

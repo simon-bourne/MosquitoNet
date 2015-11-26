@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Enhedron/Assertion/Configurable.h"
+#include "Enhedron/Util/Optional.h"
 
 #include <vector>
 #include <string>
@@ -10,7 +11,9 @@
 #include <utility>
 
 namespace Enhedron { namespace Impl { namespace Impl_Assertion {
-    using std::move;
+    using ::Enhedron::Util::optional;
+
+    using std::forward;
     using std::terminate;
     using std::vector;
     using std::string;
@@ -23,9 +26,9 @@ namespace Enhedron { namespace Impl { namespace Impl_Assertion {
 
         virtual bool notifyPassing() const override { return false; }
 
-        virtual void pass(const string &expressionText, const vector <Variable> &variableList) override { }
+        virtual void pass(optional<string> description, const string &expressionText, const vector <Variable> &variableList) override { }
 
-        virtual void fail(const string &expressionText, const vector <Variable> &variableList) override {
+        virtual void fail(optional<string> description, const string &expressionText, const vector <Variable> &variableList) override {
             cerr << "Assert failed: " << expressionText << "\n";
 
             for (const auto &variable : variableList) {
@@ -43,14 +46,14 @@ namespace Enhedron { namespace Impl { namespace Impl_Assertion {
 
     static CerrFailureHandler failureHandler;
 
-    template<typename Expression, typename... ContextVariableList>
-    void Assert(Expression &&expression, ContextVariableList &&... contextVariableList) {
-        CheckWithFailureHandler(out(failureHandler), move(expression), move(contextVariableList)...);
+    template<typename... Args>
+    void Assert(Args&&... args) {
+        CheckWithFailureHandler(out(failureHandler), forward<Args>(args)...);
     }
 
-    template<typename Exception, typename Expression, typename... ContextVariableList>
-    void AssertThrows(Expression &&expression, ContextVariableList &&... contextVariableList) {
-        CheckThrowsWithFailureHandler<Exception>(out(failureHandler), move(expression), move(contextVariableList)...);
+    template<typename Exception, typename... Args>
+    void AssertThrows(Args&&... args) {
+        CheckThrowsWithFailureHandler<Exception>(out(failureHandler), forward<Args>(args)...);
     }
 }}}
 

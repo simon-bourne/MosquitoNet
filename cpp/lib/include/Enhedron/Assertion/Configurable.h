@@ -165,6 +165,7 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     using Util::extractParameterPack;
     using Util::DecayArrayAndFunction_t;
     using Util::optional;
+    using Util::none;
 
     using std::enable_if_t;
     using std::is_base_of;
@@ -695,8 +696,8 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     struct FailureHandler {
         virtual ~FailureHandler() {};
         virtual bool notifyPassing() const = 0;
-        virtual void pass(const string &expressionText, const vector <Variable> &variableList) = 0;
-        virtual void fail(const string &expressionText, const vector <Variable> &variableList) = 0;
+        virtual void pass(optional<string> description, const string &expressionText, const vector <Variable> &variableList) = 0;
+        virtual void fail(optional<string> description, const string &expressionText, const vector <Variable> &variableList) = 0;
     };
 
     template<typename Expression, typename... ContextVariableList>
@@ -715,38 +716,59 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     template<typename Expression, typename... ContextVariableList>
     void processFailure(
             Out<FailureHandler> failureHandler,
+            optional<string> description,
             Expression expression,
             ContextVariableList... contextVariableList
     ) {
-        failureHandler->fail(expression.makeName(), buildVariableList(expression, contextVariableList...));
+        failureHandler->fail(move(description), expression.makeName(), buildVariableList(expression, contextVariableList...));
     }
 
     template<typename Expression, typename... ContextVariableList>
     void processSuccess(
             Out<FailureHandler> failureHandler,
+            optional<string> description,
             Expression expression,
             ContextVariableList... contextVariableList
     ) {
         if (failureHandler->notifyPassing()) {
-            failureHandler->pass(expression.makeName(), buildVariableList(expression, contextVariableList...));
+            failureHandler->pass(move(description), expression.makeName(), buildVariableList(expression, contextVariableList...));
         }
     }
 
-    template<typename Expression, typename... ContextVariableList>
-    bool CheckWithFailureHandler(
+    template<typename Expression, typename... Tail>
+    bool CheckWithFailureHandlerImpl(
             Out<FailureHandler> failureHandler,
+            optional<string> description,
             Expression expression,
-            ContextVariableList... contextVariableList
+            Tail... tail
     ) {
         if ( ! static_cast<bool>(expression.evaluate())) {
-            processFailure(failureHandler, move(expression), move(contextVariableList)...);
+            processFailure(failureHandler, move(description), move(expression), move(tail)...);
 
             return false;
         }
 
-        processSuccess(failureHandler, move(expression), move(contextVariableList)...);
+        processSuccess(failureHandler, move(description), move(expression), move(tail)...);
 
         return true;
+    }
+
+    template<typename Expression, typename... Tail, IsExpression<Expression> = nullptr>
+    bool CheckWithFailureHandler(
+            Out<FailureHandler> failureHandler,
+            Expression expression,
+            Tail... tail
+    ) {
+        return CheckWithFailureHandlerImpl(failureHandler, none, move(expression), move(tail)...);
+    }
+
+    template<typename... Tail, IsExpression<Expression> = nullptr>
+    bool CheckWithFailureHandler(
+            Out<FailureHandler> failureHandler,
+            string description,
+            Tail... tail
+    ) {
+        return CheckWithFailureHandlerImpl(failureHandler, move(description), move(tail)...);
     }
 
     template<
@@ -755,19 +777,20 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             typename... ContextVariableList,
             enable_if_t<is_same<Exception, exception>::value> * = nullptr
     >
-    bool CheckThrowsWithFailureHandler(
+    bool CheckThrowsWithFailureHandlerImpl(
             Out<FailureHandler> failureHandler,
+            optional<string> description,
             Expression expression,
             ContextVariableList... contextVariableList
     ) {
         try {
             expression.evaluate();
-            processFailure(failureHandler, move(expression), move(contextVariableList)...);
+            processFailure(failureHandler, move(description), move(expression), move(contextVariableList)...);
 
             return false;
         }
         catch (const exception&) {
-            processSuccess(failureHandler, move(expression), move(contextVariableList)...);
+            processSuccess(failureHandler, move(description), move(expression), move(contextVariableList)...);
         }
 
         return true;
@@ -780,28 +803,55 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             typename... ContextVariableList,
             enable_if_t<!is_same<Exception, exception>::value> * = nullptr
     >
-    bool CheckThrowsWithFailureHandler(
+    bool CheckThrowsWithFailureHandlerImpl(
             Out<FailureHandler> failureHandler,
+            optional<string> description,
             FunctionValue<Functor, Args...> expression,
             ContextVariableList... contextVariableList
     ) {
         try {
             expression.evaluate();
-            processFailure(failureHandler, move(expression), move(contextVariableList)...);
+            processFailure(failureHandler, move(description), move(expression), move(contextVariableList)...);
 
             return false;
         }
         catch (const Exception&) {
-            processSuccess(failureHandler, move(expression), move(contextVariableList)...);
+            processSuccess(failureHandler, move(description), move(expression), move(contextVariableList)...);
         }
         catch (const exception &e) {
             expression.setException(e);
-            processFailure(failureHandler, move(expression), move(contextVariableList)...);
+            processFailure(failureHandler, move(description), move(expression), move(contextVariableList)...);
 
             return false;
         }
 
         return true;
+    }
+
+    template<
+            typename Exception,
+            typename Expression,
+            typename... Tail,
+            IsExpression<Expression> = nullptr
+    >
+    bool CheckThrowsWithFailureHandler(
+            Out<FailureHandler> failureHandler,
+            Expression expression,
+            Tail... tail
+    ) {
+        return CheckThrowsWithFailureHandlerImpl<Exception>(failureHandler, none, move(expression), move(tail)...);
+    }
+
+    template<
+            typename Exception,
+            typename... Tail
+    >
+    bool CheckThrowsWithFailureHandler(
+            Out<FailureHandler> failureHandler,
+            string description,
+            Tail... tail
+    ) {
+        return CheckThrowsWithFailureHandlerImpl<Exception>(failureHandler, move(description), move(tail)...);
     }
 }}}}
 

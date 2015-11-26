@@ -32,6 +32,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using Util::bindFirst;
 
     using Util::optional;
+    using Util::none;
 
     using std::forward;
     using std::vector;
@@ -200,7 +201,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
             if (whenStack[whenDepth_].index == whenStack[whenDepth_].current) {
                 ++whenDepth_;
-                whenCurrentStack.push_back(topResult()->section("when", move(description)));
+                whenCurrentStack.push_back(topResult()->section(move(description)));
 
                 Finally depth([&] {
                     --whenDepth_;
@@ -231,6 +232,16 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         friend inline Stats checkStats(const Check& check) {
             return check.stats_;
         }
+
+        bool addCheck(bool ok) {
+            stats_.addCheck();
+
+            if ( ! ok) {
+                stats_.failCheck();
+            }
+
+            return ok;
+        }
     public:
         Check(Out<WhenRunner> whenRunner) : whenRunner_(whenRunner) {}
 
@@ -239,89 +250,25 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             whenRunner_->when(move(description), forward<Functor>(functor));
         }
 
-        template<
-                typename Expression,
-                typename... ContextVariableList,
-                IsExpression<Expression> = nullptr
-        >
-        bool operator()(
-                string description,
-                Expression expression,
-                ContextVariableList... contextVariableList
-        )
-        {
-            stats_.addCheck();
-
-            auto ok = CheckWithFailureHandler(
+        template<typename... Args>
+        bool operator()(Args&&... args) {
+            return addCheck(CheckWithFailureHandler(
                     whenRunner_->topResult(),
-                    move(expression),
-                    move(contextVariableList)...
-            );
-
-            if ( ! ok) {
-                stats_.failCheck();
-            }
-
-            return ok;
+                    forward<Args>(args)...
+            ));
         }
 
-        template<
-                typename Expression,
-                typename... ContextVariableList,
-                IsExpression<Expression> = nullptr
-        >
-        bool operator()(
-                Expression expression,
-                ContextVariableList... contextVariableList
-        )
-        {
-            auto description = expression.makeName();
-            return operator()(move(description), move(expression), move(contextVariableList)...);
-        }
-
-        template<
-                typename Exception = exception,
-                typename Expression,
-                typename... ContextVariableList,
-                IsExpression<Expression> = nullptr
-        >
-        bool throws(
-                Expression expression,
-                ContextVariableList... contextVariableList
-        )
-        {
-            return throws(
-                    expression.makeName(),
-                    move(expression),
-                    move<ContextVariableList>(contextVariableList)...
-                );
-        }
-
-        template<typename Exception = exception, typename Expression, typename... ContextVariableList>
-        bool throws(
-                string description,
-                Expression expression,
-                ContextVariableList... contextVariableList
-        )
-        {
-            auto ok = CheckThrowsWithFailureHandler<Exception>(
+        template<typename Exception = exception, typename... Args>
+        bool throws(Args&&... args) {
+            return addCheck(CheckThrowsWithFailureHandler<Exception>(
                     whenRunner_->topResult(),
-                    move(expression),
-                    move(contextVariableList)...
-            );
-
-            stats_.addCheck();
-
-            if ( ! ok) {
-                stats_.failCheck();
-            }
-
-            return ok;
+                    forward<Args>(args)...
+            ));
         }
 
         template<typename Expression, typename... ContextVariableList>
         void fail(Expression expression, ContextVariableList... contextVariableList) {
-            processFailure(whenRunner_->topResult(), move(expression), move(contextVariableList)...);
+            processFailure(whenRunner_->topResult(), none, move(expression), move(contextVariableList)...);
             stats_.failCheck();
         }
     };
