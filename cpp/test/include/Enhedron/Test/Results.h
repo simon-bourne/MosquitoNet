@@ -55,9 +55,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
     public:
         virtual ~ResultTest() {}
         virtual unique_ptr<ResultTest> section(string name, string description) = 0;
-        virtual void pass(const string& description) = 0;
         virtual void failByException(const exception& e) = 0;
-        virtual void fail(const string &expressionText, const vector <Variable> &variableList) = 0;
     };
 
     class ResultContext: public NoCopy {
@@ -95,6 +93,14 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
                 (*outputStream_) << "    ";
             }
         }
+
+        void printVariables(const vector <Variable> &variableList) {
+            for (const auto& variable : variableList) {
+                indent(2);
+                (*outputStream_) << variable.name() << " = " << variable.value()
+                << ": file \"" << variable.file() << "\", line " << variable.line() << ".\n";
+            }
+        }
     public:
         HumanResultTest(Out<ostream> outputStream, size_t depth, Verbosity verbosity) :
                 outputStream_(outputStream), depth_(depth), verbosity_(verbosity)
@@ -109,21 +115,20 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
             return make_unique<HumanResultTest>(outputStream_, depth_ + 1, verbosity_);
         }
 
+        virtual bool notifyPassing() const override { return verbosity_ >= Verbosity::CHECKS; }
+
         virtual void fail(const string &expressionText, const vector <Variable> &variableList) override {
             indent(1);
             (*outputStream_) << "Check failed: " << expressionText << "\n";
-
-            for (const auto& variable : variableList) {
-                indent(2);
-                (*outputStream_) << variable.name() << " = " << variable.value()
-                                 << ": file \"" << variable.file() << "\", line " << variable.line() << ".\n";
-            }
+            printVariables(variableList);
         }
 
-        virtual void pass(const string& description) override {
-            if (verbosity_ >= Verbosity::CHECKS) {
-                indent(1);
-                (*outputStream_) << "then: " << description << endl;
+        virtual void pass(const string& description, const vector <Variable> &variableList) override {
+            indent(1);
+            (*outputStream_) << "then: " << description << endl;
+
+            if (verbosity_ >= Verbosity::VARIABLES) {
+                printVariables(variableList);
             }
         }
 

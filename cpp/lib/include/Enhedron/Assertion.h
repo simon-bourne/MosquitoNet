@@ -21,6 +21,10 @@ namespace Enhedron { namespace Impl { namespace Impl_Assertion {
     struct CerrFailureHandler final: FailureHandler {
         virtual ~CerrFailureHandler() override {}
 
+        virtual bool notifyPassing() const override { return false; }
+
+        virtual void pass(const string &expressionText, const vector <Variable> &variableList) override { }
+
         virtual void fail(const string &expressionText, const vector <Variable> &variableList) override {
             cerr << "Assert failed: " << expressionText << "\n";
 

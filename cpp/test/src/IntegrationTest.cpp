@@ -38,6 +38,13 @@ namespace Enhedron {
                     check(">>> 4", VAL(true));
                 });
             });
+        }),
+        given("simpleWhen", [] (Check& check) {
+            check("penultimate failure", VAL(false));
+
+            check.when("when", [&] {
+                check("last failure", VAL(false));
+            });
         })
     );
 }

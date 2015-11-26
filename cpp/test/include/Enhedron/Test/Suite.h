@@ -173,16 +173,17 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         };
 
         vector<StackElement> whenStack;
-        size_t whenDepth = 0;
+        vector<unique_ptr<ResultTest>> whenCurrentStack;
+        size_t whenDepth_ = 0;
+
+        Out<ResultTest> results_;
+        Stats stats_;
 
         bool topWhenDone() const {
             const auto& top = whenStack.back();
 
             return top.current == top.index + 1;
         }
-
-        Out<ResultTest> results_;
-        Stats stats_;
     public:
         WhenRunner(Out<ResultTest> results) : results_(results) {}
 
@@ -191,28 +192,39 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
         template<typename Functor>
         void when(string description, Functor&& functor) {
-            if (whenStack.size() <= whenDepth) {
+            if (whenStack.size() <= whenDepth_) {
                 whenStack.push_back(StackElement{});
             }
 
-            Finally stack([&] { ++whenStack[whenDepth].current; });
+            Finally stack([&] { ++whenStack[whenDepth_].current; });
 
-            if (whenStack[whenDepth].index == whenStack[whenDepth].current) {
-                ++whenDepth;
+            if (whenStack[whenDepth_].index == whenStack[whenDepth_].current) {
+                ++whenDepth_;
+                whenCurrentStack.push_back(topResult()->section("when", move(description)));
 
-                Finally depth([&] { --whenDepth; });
-                auto whenResults = results_->section("when", move(description));
+                Finally depth([&] {
+                    --whenDepth_;
+                    whenCurrentStack.pop_back();
+                });
+
                 stats_.addTest();
 
                 functor();
             }
         }
 
+        Out<ResultTest> topResult() {
+            if (whenCurrentStack.empty()) {
+                return results_;
+            }
+
+            return out(*whenCurrentStack.back());
+        }
+
         Stats stats() const { return stats_; }
     };
 
     class Check : public NoCopy {
-        Out<ResultTest> result_;
         Out<WhenRunner> whenRunner_;
         Stats stats_;
 
@@ -220,7 +232,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             return check.stats_;
         }
     public:
-        Check(Out<ResultTest> result, Out<WhenRunner> whenRunner) : result_(result), whenRunner_(whenRunner) {}
+        Check(Out<WhenRunner> whenRunner) : whenRunner_(whenRunner) {}
 
         template<typename Functor>
         void when(string description, Functor&& functor) {
@@ -239,16 +251,14 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         )
         {
             stats_.addCheck();
+
             auto ok = CheckWithFailureHandler(
-                    result_,
+                    whenRunner_->topResult(),
                     move(expression),
                     move(contextVariableList)...
             );
 
-            if (ok) {
-                result_->pass(move(description));
-            }
-            else {
+            if ( ! ok) {
                 stats_.failCheck();
             }
 
@@ -295,17 +305,14 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         )
         {
             auto ok = CheckThrowsWithFailureHandler<Exception>(
-                    result_,
+                    whenRunner_->topResult(),
                     move(expression),
                     move(contextVariableList)...
             );
 
             stats_.addCheck();
 
-            if (ok) {
-                result_->pass(move(description));
-            }
-            else {
+            if ( ! ok) {
                 stats_.failCheck();
             }
 
@@ -314,7 +321,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
         template<typename Expression, typename... ContextVariableList>
         void fail(Expression expression, ContextVariableList... contextVariableList) {
-            ProcessFailure(result_, move(expression), move(contextVariableList)...);
+            processFailure(whenRunner_->topResult(), move(expression), move(contextVariableList)...);
             stats_.failCheck();
         }
     };
@@ -322,7 +329,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     template<typename Functor, typename... Args>
     void WhenRunner::run(Functor&& functor, Args&&... args) {
         whenStack.clear();
-        whenDepth = 0;
+        whenDepth_ = 0;
         stats_.addFixture();
 
         do {
@@ -330,7 +337,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 element.current = 0;
             }
 
-            Check check(results_, out(*this));
+            Check check(out(*this));
 
             try {
                 functor(check, forward<Args>(args)...);

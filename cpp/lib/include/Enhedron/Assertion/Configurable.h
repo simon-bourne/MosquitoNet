@@ -99,6 +99,13 @@ namespace Enhedron { namespace Assertion {
     };
 
     template<>
+    struct Convert<bool> {
+        static inline std::string toString(bool value) {
+            return value ? "true" : "false";
+        }
+    };
+
+    template<>
     struct Convert<std::string> {
         static inline std::string toString(const std::string& s) {
             return "\"" + s + "\"";
@@ -687,39 +694,42 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
 
     struct FailureHandler {
         virtual ~FailureHandler() {};
+        virtual bool notifyPassing() const = 0;
+        virtual void pass(const string &expressionText, const vector <Variable> &variableList) = 0;
         virtual void fail(const string &expressionText, const vector <Variable> &variableList) = 0;
     };
 
-    template<
-            typename Expression,
-            typename SubExpression,
-            typename... ContextVariableList
-    >
-    void ProcessFailureImpl(
-            Out<FailureHandler> failureHandler,
-            Expression expression,
-            vector<Variable> variableList,
-            SubExpression variableExpression,
-            ContextVariableList... contextVariableList
-    ) {
-        variableExpression.appendVariables(variableList);
-        ProcessFailureImpl(failureHandler, move(expression), move(variableList), move(contextVariableList)...);
-    }
-
-    template<typename Expression>
-    void ProcessFailureImpl(Out<FailureHandler> failureHandler, Expression expression, vector<Variable> variableList) {
-        failureHandler->fail(expression.makeName(), move(variableList));
-    }
-
     template<typename Expression, typename... ContextVariableList>
-    void ProcessFailure(
-            Out<FailureHandler> failureHandler,
-            Expression expression,
-            ContextVariableList... contextVariableList
+    vector<Variable> buildVariableList(
+            const Expression& expression,
+            const ContextVariableList&... contextVariableList
     ) {
         vector<Variable> variableList;
         expression.appendVariables(variableList);
-        ProcessFailureImpl(failureHandler, move(expression), move(variableList), move(contextVariableList)...);
+        vector<Variable> contextVariableVector(contextVariableList...);
+        variableList.insert(variableList.end(), contextVariableVector.begin(), contextVariableVector.end());
+
+        return variableList;
+    }
+
+    template<typename Expression, typename... ContextVariableList>
+    void processFailure(
+            Out<FailureHandler> failureHandler,
+            Expression expression,
+            ContextVariableList... contextVariableList
+    ) {
+        failureHandler->fail(expression.makeName(), buildVariableList(expression, contextVariableList...));
+    }
+
+    template<typename Expression, typename... ContextVariableList>
+    void processSuccess(
+            Out<FailureHandler> failureHandler,
+            Expression expression,
+            ContextVariableList... contextVariableList
+    ) {
+        if (failureHandler->notifyPassing()) {
+            failureHandler->pass(expression.makeName(), buildVariableList(expression, contextVariableList...));
+        }
     }
 
     template<typename Expression, typename... ContextVariableList>
@@ -729,10 +739,12 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
             ContextVariableList... contextVariableList
     ) {
         if ( ! static_cast<bool>(expression.evaluate())) {
-            ProcessFailure(failureHandler, move(expression), move(contextVariableList)...);
+            processFailure(failureHandler, move(expression), move(contextVariableList)...);
 
             return false;
         }
+
+        processSuccess(failureHandler, move(expression), move(contextVariableList)...);
 
         return true;
     }
@@ -750,12 +762,12 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     ) {
         try {
             expression.evaluate();
-            ProcessFailure(failureHandler, move(expression), move(contextVariableList)...);
+            processFailure(failureHandler, move(expression), move(contextVariableList)...);
 
             return false;
         }
         catch (const exception&) {
-            // Expected
+            processSuccess(failureHandler, move(expression), move(contextVariableList)...);
         }
 
         return true;
@@ -775,16 +787,16 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     ) {
         try {
             expression.evaluate();
-            ProcessFailure(failureHandler, move(expression), move(contextVariableList)...);
+            processFailure(failureHandler, move(expression), move(contextVariableList)...);
 
             return false;
         }
         catch (const Exception&) {
-            // Expected
+            processSuccess(failureHandler, move(expression), move(contextVariableList)...);
         }
         catch (const exception &e) {
             expression.setException(e);
-            ProcessFailure(failureHandler, move(expression), move(contextVariableList)...);
+            processFailure(failureHandler, move(expression), move(contextVariableList)...);
 
             return false;
         }
@@ -800,7 +812,7 @@ namespace Enhedron { namespace Assertion {
     using Impl::Configurable::Expression;
     using Impl::Configurable::Variable;
     using Impl::Configurable::makeFunction;
-    using Impl::Configurable::ProcessFailure;
+    using Impl::Configurable::processFailure;
     using Impl::Configurable::FailureHandler;
     using Impl::Configurable::Function;
 }}
