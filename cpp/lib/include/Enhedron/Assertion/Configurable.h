@@ -43,7 +43,8 @@ namespace Enhedron { namespace Assertion {
         using True = std::integral_constant<bool, true>;
         template <typename U>       struct test : std::false_type {};
 
-        template <typename... Args> struct test<std::array             <Args...>> : True{};
+        template <typename Value, std::size_t N> struct test<std::array<Value, N>> : True{};
+
         template <typename... Args> struct test<std::deque             <Args...>> : True{};
         template <typename... Args> struct test<std::forward_list      <Args...>> : True{};
         template <typename... Args> struct test<std::list              <Args...>> : True{};
