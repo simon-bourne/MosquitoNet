@@ -38,30 +38,41 @@ namespace Enhedron { namespace Assertion {
         static constexpr bool value = decltype(test<T>())::value;
     };
 
-    template<typename T>
+    template<typename CONTAINER>
     class IsStlContainer {
         using True = std::integral_constant<bool, true>;
         template <typename U>       struct test : std::false_type {};
 
         template <typename Value, std::size_t N> struct test<std::array<Value, N>> : True{};
 
+        // MSVC doesn't like the parameter packs for these. Suspect it just doesn't like the
+        // parameter packs for any container and is just using the defaults for allocators.
+        template <typename K, typename T, typename C, typename A>
+        struct test<std::map<K, T, C, A>> : True{};
+
+        template <typename K, typename T, typename C, typename A>
+        struct test<std::multimap<K, T, C, A>> : True{};
+
+        template <typename K, typename T, typename H, typename P, typename A>
+        struct test<std::unordered_map<K, T, H, P, A>> : True{};
+
+        template <typename K, typename T, typename H, typename P, typename A>
+        struct test<std::unordered_multimap<K, T, H, P, A>> : True{};
+
         template <typename... Args> struct test<std::deque             <Args...>> : True{};
         template <typename... Args> struct test<std::forward_list      <Args...>> : True{};
         template <typename... Args> struct test<std::list              <Args...>> : True{};
         template <typename... Args> struct test<std::multiset          <Args...>> : True{};
-        template <typename... Args> struct test<std::map               <Args...>> : True{};
-        template <typename... Args> struct test<std::multimap          <Args...>> : True{};
         template <typename... Args> struct test<std::priority_queue    <Args...>> : True{};
         template <typename... Args> struct test<std::queue             <Args...>> : True{};
         template <typename... Args> struct test<std::set               <Args...>> : True{};
         template <typename... Args> struct test<std::stack             <Args...>> : True{};
         template <typename... Args> struct test<std::unordered_set     <Args...>> : True{};
         template <typename... Args> struct test<std::unordered_multiset<Args...>> : True{};
-        template <typename... Args> struct test<std::unordered_map     <Args...>> : True{};
-        template <typename... Args> struct test<std::unordered_multimap<Args...>> : True{};
         template <typename... Args> struct test<std::vector            <Args...>> : True{};
+
     public:
-        static constexpr bool value = test<std::decay_t<T>>::value;
+        static constexpr bool value = test<std::decay_t<CONTAINER>>::value;
     };
 
     template<typename Value, typename Enable = void>
