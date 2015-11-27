@@ -9,7 +9,6 @@
 
 #include "Enhedron/Test.h"
 #include "Enhedron/CommandLine/Parameters.h"
-#include "Enhedron/Container/StringTree.h"
 
 #include <string>
 #include <vector>
@@ -17,24 +16,27 @@
 #include <algorithm>
 #include <locale>
 #include <cctype>
+#include <regex>
+#include <memory>
 
 namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
     using std::string;
     using std::move;
     using std::vector;
+    using std::shared_ptr;
+    using std::make_shared;
     using std::runtime_error;
-    using std::find;
+    using std::find_first_of;
     using std::tolower;
     using std::locale;
     using std::transform;
+    using std::regex;
 
     using CommandLine::ExitStatus;
     using CommandLine::Flag;
     using CommandLine::Option;
     using CommandLine::Name;
     using CommandLine::Arguments;
-
-    using Container::StringTree;
 
     Verbosity parseVerbosity(string v) {
         transform(v.begin(), v.end(), v.begin(),
@@ -54,48 +56,53 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
     }
 
     ExitStatus runTests(bool listOnly, string verbosityString, vector<string> pathList) {
-        StringTree pathTree;
+        vector<shared_ptr<vector<regex>>> pathRegexs;
 
         for (auto& path : pathList) {
-            vector<string> pathComponentList;
-            auto posDot = path.begin();
+            vector<regex> pathComponentList;
+            auto separatorPos = path.begin();
+            auto matchChars = "/\\";
+            auto matchCharsEnd = matchChars + 2;
+            auto pathEnd = path.end();
 
             while (true) {
-                auto end = find(posDot, path.end(), '.');
+                auto end = find_first_of(separatorPos, pathEnd, matchChars, matchCharsEnd);
 
-                pathComponentList.emplace_back(posDot, end);
+                while (end != pathEnd && end + 1 != pathEnd && *end == '\\') {
+                    ++end;
 
-                if (end == path.end()) {
+                    if (*end == '/') {
+                        copy(end, pathEnd, end - 1);
+                    }
+                    else {
+                        ++end;
+                    }
+
+                    end = find_first_of(end, pathEnd, matchChars, matchCharsEnd);
+                }
+
+                if (separatorPos != end) {
+                    pathComponentList.emplace_back(separatorPos, end);
+                }
+
+                if (end == pathEnd) {
                     break;
                 }
 
-                posDot = end;
-                ++posDot;
+                separatorPos = end;
+                ++separatorPos;
             }
 
-            auto childPtr = out(pathTree);
-
-            for (const auto& pathComponent : pathComponentList) {
-                auto child = childPtr->get(pathComponent);
-
-                if (child) {
-                    childPtr = *child;
-                }
-                else {
-                    childPtr = childPtr->set(pathComponent);
-                }
-            }
-
-            childPtr->clear();
+            pathRegexs.emplace_back(make_shared<vector<regex>>(move(pathComponentList)));
         }
 
         Verbosity verbosity = parseVerbosity(verbosityString);
 
         if (listOnly) {
-            Test::list(pathTree, verbosity);
+            Test::list(pathRegexs, verbosity);
         }
         else {
-            if ( ! Test::run(pathTree, verbosity)) {
+            if ( ! Test::run(pathRegexs, verbosity)) {
                 return ExitStatus::SOFTWARE;
             }
         }

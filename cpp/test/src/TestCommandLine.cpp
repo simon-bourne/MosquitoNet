@@ -38,14 +38,14 @@ namespace Enhedron { namespace Impl_TestCommandLine {
             static_cast<int>(args.size()),
             args.data(),
             [&] (vector<string> positional) {
-                check(VAL(positional.size()) == 0u);
+                check(VAR(positional.size()) == 0u);
                 return exitStatus;
             }
         );
 
-        check(VAL(helpOut.str()) == expectedOutput);
-        check(VAL(errorOut.str()) == expectedErrorOutput);
-        check(VAL(exitStatusCheck) == static_cast<int>(exitStatus));
+        check(VAR(helpOut.str()) == expectedOutput);
+        check(VAR(errorOut.str()) == expectedErrorOutput);
+        check(VAR(exitStatusCheck) == static_cast<int>(exitStatus));
     }
 
     static Test::Suite s("CommandLine",
@@ -67,19 +67,19 @@ namespace Enhedron { namespace Impl_TestCommandLine {
                  2,
                  argv,
                  [&] (vector<string> positional) {
-                     check.fail(VAL("Expected help"));
+                     check.fail(VAR("Expected help"));
                      return ExitStatus::OK;
                  }
              );
 
-             check(VAL(helpOut.str()) ==
+             check(VAR(helpOut.str()) ==
                  "Usage: exeName [OPTION]...\n\n"
                  "Description\n\n"
                  "  --help        Display this help message.\n"
                  "  --version     Display version information.\n\n"
                  "Notes\n\n");
-             check(VAL(errorOut.str()) == "");
-             check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
+             check(VAR(errorOut.str()) == "");
+             check(VAR(exitStatus) == static_cast<int>(ExitStatus::OK));
          }),
 
          given("StringArgs", [] (Check& check) {
@@ -90,9 +90,9 @@ namespace Enhedron { namespace Impl_TestCommandLine {
              auto exitStatus = Arguments(out(helpOut), out(errorOut), "").run(
                  5, argv,
                  [&](const string& arg, const string& arg1, vector<string> positional) {
-                     check(VAL(arg) == "xyz");
-                     check(VAL(arg1) == "abc");
-                     check(VAL(positional.size()) == 0u);
+                     check(VAR(arg) == "xyz");
+                     check(VAR(arg1) == "abc");
+                     check(VAR(positional.size()) == 0u);
 
                      return ExitStatus::OK;
                  },
@@ -100,9 +100,9 @@ namespace Enhedron { namespace Impl_TestCommandLine {
                  Option<string>(Name("string2"), "value2")
              );
 
-             check(VAL(helpOut.str()) == "");
-             check(VAL(errorOut.str()) == "");
-             check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
+             check(VAR(helpOut.str()) == "");
+             check(VAR(errorOut.str()) == "");
+             check(VAR(exitStatus) == static_cast<int>(ExitStatus::OK));
          }),
 
          given("Description", [] (Check& check) {
@@ -113,7 +113,7 @@ namespace Enhedron { namespace Impl_TestCommandLine {
              auto exitStatus = Arguments(out(helpOut), out(errorOut), "", 40).run(
                      2, argv,
                      [&](const string& arg1, const string& arg2, vector<string> positional) {
-                         check.fail(VAL("Should show help"));
+                         check.fail(VAR("Should show help"));
 
                          return ExitStatus::OK;
                      },
@@ -121,7 +121,7 @@ namespace Enhedron { namespace Impl_TestCommandLine {
                      Option<string>(Name('s', "string2", "String2descriptionShouldBeHyphenated"), "string2Value")
              );
 
-             check(VAL(helpOut.str()) ==
+             check(VAR(helpOut.str()) ==
                            "Usage: exeName [OPTION]...\n\n"
                            "  --string1 <string1Value>\n"
                            "                    String 1 description\n\n"
@@ -133,8 +133,8 @@ namespace Enhedron { namespace Impl_TestCommandLine {
                            "  --version         Display version\n"
                            "                    information.\n\n\n"
              );
-             check(VAL(errorOut.str()) == "");
-             check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
+             check(VAR(errorOut.str()) == "");
+             check(VAR(exitStatus) == static_cast<int>(ExitStatus::OK));
          }),
 
         given("VectorArgs", [] (Check& check) {
@@ -145,9 +145,9 @@ namespace Enhedron { namespace Impl_TestCommandLine {
             auto exitStatus = Arguments(out(helpOut), out(errorOut), "").run(
                     5, argv,
                     [&](const vector<string>& vectorOption, vector<string> positional) {
-                        if (check(VAL(vectorOption.size()) == 2u)) {
-                            check(VAL(vectorOption[0]) == "value0");
-                            check(VAL(vectorOption[1]) == "value1");
+                        if (check(VAR(vectorOption.size()) == 2u)) {
+                            check(VAR(vectorOption[0]) == "value0");
+                            check(VAR(vectorOption[1]) == "value1");
                         }
 
                         return ExitStatus::OK;
@@ -155,9 +155,9 @@ namespace Enhedron { namespace Impl_TestCommandLine {
                     Option<vector<string>>(Name("vector", ""), "")
             );
 
-            check(VAL(helpOut.str()) == "");
-            check(VAL(errorOut.str()) == "");
-            check(VAL(exitStatus) == static_cast<int>(ExitStatus::OK));
+            check(VAR(helpOut.str()) == "");
+            check(VAR(errorOut.str()) == "");
+            check(VAR(exitStatus) == static_cast<int>(ExitStatus::OK));
         })
     );
 }}

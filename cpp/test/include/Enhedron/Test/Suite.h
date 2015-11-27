@@ -13,7 +13,6 @@
 #include "Enhedron/Assertion/Configurable.h"
 #include "Enhedron/Assertion.h"
 #include "Enhedron/Test/Results.h"
-#include "Enhedron/Container/StringTree.h"
 
 #include "Enhedron/Util/Optional.h"
 
@@ -25,11 +24,10 @@
 #include <stdexcept>
 #include <tuple>
 #include <iostream>
+#include <regex>
 
 namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using namespace Assertion;
-
-    using Container::StringTree;
 
     using Util::TaggedValue;
     using Util::StoreArgs;
@@ -46,6 +44,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using std::function;
     using std::string;
     using std::unique_ptr;
+    using std::shared_ptr;
     using std::make_unique;
     using std::tuple;
     using std::index_sequence;
@@ -56,13 +55,18 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using std::ref;
     using std::runtime_error;
     using std::cout;
+    using std::regex;
+    using std::regex_match;
+    using std::reference_wrapper;
+
+    using PathList = vector<shared_ptr<vector<regex>>>;
 
     class Context: public NoCopy {
     public:
         virtual ~Context() {}
 
-        virtual void list(const StringTree& pathTree, Out<ResultContext> results) const = 0;
-        virtual Stats run(const StringTree& pathTree, Out<ResultContext> results) = 0;
+        virtual void list(const PathList& pathList, Out<ResultContext> results, size_t depth) const = 0;
+        virtual Stats run(const PathList& pathList, Out<ResultContext> results, size_t depth) = 0;
     };
 
     using ContextList = vector<unique_ptr<Context>>;
@@ -73,17 +77,17 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             instance().contextList.emplace_back(move(context));
         }
 
-        static void list(const StringTree& pathTree, Out<Results> results) {
+        static void list(const PathList& pathList, Out<Results> results) {
             for (const auto& context : instance().contextList) {
-                context->list(pathTree, results);
+                context->list(pathList, results, 0);
             }
         }
 
-        static Stats run(const StringTree& pathTree, Out<Results> results) {
+        static Stats run(const PathList& pathList, Out<Results> results) {
             Stats stats;
 
             for (const auto& context : instance().contextList) {
-                stats += context->run(pathTree, results);
+                stats += context->run(pathList, results, 0);
             }
 
             results->finish(stats);
@@ -108,39 +112,55 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             contextList(move(contextList))
         {}
 
-        virtual void list(const StringTree& pathTree, Out<ResultContext> results) const override {
-            auto child = getChildTree(pathTree);
+        virtual void list(const PathList& pathList, Out<ResultContext> results, size_t depth) const override {
+            auto nextPathList = getMatchingPaths(pathList, depth);
+            auto resultChild = results->child(name);
 
-            if (child) {
-                auto resultChild = results->child(name);
-
+            if (nextPathList) {
                 for (const auto& context : contextList) {
-                    context->list(*child, out(*resultChild));
+                    context->list(*nextPathList, out(*resultChild), depth + 1);
                 }
             }
         }
 
-        virtual Stats run(const StringTree& pathTree, Out<ResultContext> results) override {
-            auto child = getChildTree(pathTree);
+        virtual Stats run(const PathList& pathList, Out<ResultContext> results, size_t depth) override {
             Stats stats;
+            auto nextPathList = getMatchingPaths(pathList, depth);
 
-            if (child) {
+            if (nextPathList) {
                 auto resultChild = results->child(name);
 
                 for (const auto& context : contextList) {
-                    stats += context->run(*child, out(*resultChild));
+                    stats += context->run(*nextPathList, out(*resultChild), depth + 1);
                 }
             }
 
             return stats;
         }
     private:
-        optional<const StringTree&> getChildTree(const StringTree& pathTree) const {
-            if (pathTree.empty()) {
-                return pathTree;
+        optional<PathList> getMatchingPaths(const PathList& pathList, size_t depth) const {
+            if (pathList.empty()) {
+                return pathList;
             }
 
-            return pathTree.get(name);
+            vector<shared_ptr<vector<regex>>> nextPathList;
+
+            for (const auto& path : pathList) {
+                if (path->size() > depth) {
+                    if (regex_match(name, (*path)[depth])) {
+                        nextPathList.push_back(path);
+                    }
+                }
+                else {
+                    return pathList;
+                }
+            }
+
+            if (nextPathList.empty()) {
+                return none;
+            }
+
+            return move(nextPathList);
         }
 
         string name;
@@ -318,8 +338,23 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
     template<typename Functor, typename... Args>
     class Runner final: public Context {
-        bool included(const StringTree& pathTree) const {
-            return pathTree.empty() || bool(pathTree.get(name));
+        bool included(const PathList& pathList, size_t depth) const {
+            if (pathList.empty()) {
+                return true;
+            }
+
+            for (const auto& path : pathList) {
+                if (path->size() > depth) {
+                    if (regex_match(name, (*path)[depth])) {
+                        return true;
+                    }
+                }
+                else {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         string name;
@@ -330,15 +365,15 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             name(move(name)), runTest(move(runTest)), args(forward<Args>(args)...)
         {}
 
-        virtual void list(const StringTree& pathTree, Out<ResultContext> results) const override {
-            if ( ! included(pathTree)) return;
+        virtual void list(const PathList& pathList, Out<ResultContext> results, size_t depth) const override {
+            if ( ! included(pathList, depth)) return;
 
             results->listTest(name);
         }
 
         // Must only be called once as it forwards the constructor arguments to the class.
-        virtual Stats run(const StringTree& pathTree, Out<ResultContext> results) override {
-            if ( ! included(pathTree)) return Stats{};
+        virtual Stats run(const PathList& pathList, Out<ResultContext> results, size_t depth) override {
+            if ( ! included(pathList, depth)) return Stats{};
 
             return args.applyExtraBefore(runTest, name, results);
         }
@@ -473,24 +508,24 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         return Exhaustive<DecayArrayAndFunction_t< Args>...>(forward<DecayArrayAndFunction_t< Args>>(args)...);
     }
 
-    inline void list(const StringTree& pathTree, Out<Results> results) {
-        Register::list(pathTree, results);
+    inline void list(const PathList& pathList, Out<Results> results) {
+        Register::list(pathList, results);
     }
 
-    inline bool run(const StringTree& pathTree, Out<Results> results) {
-        auto stats = Register::run(pathTree, results);
+    inline bool run(const PathList& pathList, Out<Results> results) {
+        auto stats = Register::run(pathList, results);
 
         return stats.failedTests() == 0 && stats.failedChecks() == 0;
     }
 
-    inline void list(const StringTree& pathTree, Verbosity verbosity) {
+    inline void list(const PathList& pathList, Verbosity verbosity) {
         HumanResults results(out(cout), verbosity);
-        list(pathTree, out(results));
+        list(pathList, out(results));
     }
 
-    inline bool run(const StringTree& pathTree, Verbosity verbosity) {
+    inline bool run(const PathList& pathList, Verbosity verbosity) {
         HumanResults results(out(cout), verbosity);
-        return run(pathTree, out(results));
+        return run(pathList, out(results));
     }
 }}}}
 

@@ -7,7 +7,6 @@
       <sourceFolder url="file://$MODULE_DIR$/cpp/test/src/IntegrationTest.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/cpp/test/src/TestAssert.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/cpp/test/src/TestCommandLine.cpp" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/cpp/test/src/TestContainer.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/cpp/test/src/TestHarness.cpp" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/cpp/test/src/TestUtil.cpp" isTestSource="false" />
     </content>

@@ -173,7 +173,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
             }
 
             if (verbosity_ >= Verbosity::FIXTURES) {
-                *outputStream_ << "    " << testName << endl;
+                *outputStream_ << "    Given: " << testName << endl;
             }
         }
     public:
@@ -185,7 +185,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
             string childPath(path_);
             
             if ( ! path_.empty()) {
-                childPath += ".";
+                childPath += "/";
             }
             
             childPath += name;

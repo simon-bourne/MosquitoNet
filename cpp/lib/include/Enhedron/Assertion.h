@@ -66,4 +66,4 @@ namespace Enhedron {
     using Impl::Impl_Assertion::Assert;
 }
 
-#define VAL M_ENHEDRON_VAL
+#define VAR M_ENHEDRON_VAL

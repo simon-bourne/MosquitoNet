@@ -102,12 +102,12 @@ namespace Enhedron {
             CheckWithFailureHandler(out(recordFailures), move(expression));
             auto& failure = recordFailures.failure();
 
-            if (check(VAL(bool(failure))) && expressionText) {
-                check(VAL(failure->expressionText) == expressionText);
+            if (check(VAR(bool(failure))) && expressionText) {
+                check(VAR(failure->expressionText) == expressionText);
             }
         }
         catch (const exception& e){
-            check.fail(VAL(e.what()));
+            check.fail(VAR(e.what()));
         }
     }
 
@@ -117,14 +117,14 @@ namespace Enhedron {
         bool result = op(lhs, rhs);
 
         if (result) {
-            check(op(VAL(lhs), VAL(rhs)));
-            check(op(lhs, VAL(rhs)));
-            check(op(VAL(lhs), rhs));
+            check(op(VAR(lhs), VAR(rhs)));
+            check(op(lhs, VAR(rhs)));
+            check(op(VAR(lhs), rhs));
         }
         else {
-            expectFailure(check, op(VAL(lhs), VAL(rhs)));
-            expectFailure(check, op(lhs, VAL(rhs)));
-            expectFailure(check, op(VAL(lhs), rhs));
+            expectFailure(check, op(VAR(lhs), VAR(rhs)));
+            expectFailure(check, op(lhs, VAR(rhs)));
+            expectFailure(check, op(VAR(lhs), rhs));
         }
     }
 
@@ -141,9 +141,9 @@ namespace Enhedron {
         Operator op;
         auto result = op(lhs, rhs);
 
-        check(op(VAL(lhs), VAL(rhs)) == result);
-        check(op(lhs, VAL(rhs)) == result);
-        check(op(VAL(lhs), rhs) == result);
+        check(op(VAR(lhs), VAR(rhs)) == result);
+        check(op(lhs, VAR(rhs)) == result);
+        check(op(VAR(lhs), rhs) == result);
     }
 
     template<typename Operator>
@@ -176,12 +176,12 @@ namespace Enhedron {
             testAssertThrows<Exception>(out(recordFailures), move(expression));
             auto& failure = recordFailures.failure();
 
-            if (check(VAL(bool(failure))) && expressionText) {
-                check(VAL(failure->expressionText) == expressionText);
+            if (check(VAR(bool(failure))) && expressionText) {
+                check(VAR(failure->expressionText) == expressionText);
             }
         }
         catch (const exception& e) {
-            check.fail(VAL(e.what()));
+            check.fail(VAR(e.what()));
         }
     }
 
@@ -212,33 +212,33 @@ namespace Enhedron {
 
     static Test::Suite s("Assert",
         given("Success", [] (Check& check) {
-            check(VAL(true));
-            check(! VAL(false));
-            check(! VAL(false) && !VAL(false));
-            check(VAL(sum3)(1, 2, 3) == 6);
+            check(VAR(true));
+            check(! VAR(false));
+            check(! VAR(false) && !VAR(false));
+            check(VAR(sum3)(1, 2, 3) == 6);
         }),
         given("Failure", [] (Check& check) {
-            expectFailure(check, VAL(false), "false");
-            expectFailure(check, VAL(false) || VAL(false), "(false || false)");
+            expectFailure(check, VAR(false), "false");
+            expectFailure(check, VAR(false) || VAR(false), "(false || false)");
 
             int a = 1;
-            expectFailure(check, VAL(sum3)(VAL(a), 2, 3) == 7, "(sum3(a, 2, 3) == 7)");
+            expectFailure(check, VAR(sum3)(VAR(a), 2, 3) == 7, "(sum3(a, 2, 3) == 7)");
         }),
         given("Overloaded", [] (Check& check) {
             check(overloadedProxy(1) == overloaded(1));
             check(overloadedProxy(1.0) == overloaded(1.0));
 
             int a = 1;
-            expectFailure(check, overloadedProxy(VAL(a)) == 2, "(overloaded(a) == 2)");
+            expectFailure(check, overloadedProxy(VAR(a)) == 2, "(overloaded(a) == 2)");
         }),
         given("countMatching, check it works with lambda predicates", [] (Check& check) {
             vector<int> intVec{ 1, 2, 3 };
             auto zeroMatcher = [] (const int value) { return value == 0; };
-            check(countMatching(intVec, [] (const int& value) { return value == 1; }) == VAL(1));
-            check(countMatching(intVec, zeroMatcher) == VAL(0));
+            check(countMatching(intVec, [] (const int& value) { return value == 1; }) == VAR(1));
+            check(countMatching(intVec, zeroMatcher) == VAR(0));
             expectFailure(
                     check,
-                    countMatching(intVec, VAL(zeroMatcher)) == VAL(1),
+                    countMatching(intVec, VAR(zeroMatcher)) == VAR(1),
                     "(countMatching([1, 2, 3], zeroMatcher) == 1)"
             );
         }),
@@ -247,36 +247,36 @@ namespace Enhedron {
             const vector<int> constVec{ 1, 1, 1, 1 };
 
             check.when("countEqual", [&] {
-                check(countEqual(intVec, 1) == VAL(1));
-                check(countEqual(intVec, 0) == VAL(0));
-                expectFailure(check, countEqual(intVec, 0) == VAL(1), "(countEqual([1, 2, 3], 0) == 1)");
+                check(countEqual(intVec, 1) == VAR(1));
+                check(countEqual(intVec, 0) == VAR(0));
+                expectFailure(check, countEqual(intVec, 0) == VAR(1), "(countEqual([1, 2, 3], 0) == 1)");
             });
 
             check.when("countMatching", [&] {
-                check(countMatching(intVec, equals1) == VAL(1));
-                check(countMatching(intVec, equals0) == VAL(0));
+                check(countMatching(intVec, equals1) == VAR(1));
+                check(countMatching(intVec, equals0) == VAR(0));
                 expectFailure(
                         check,
-                        countMatching(intVec, VAL(equals0)) == VAL(1),
+                        countMatching(intVec, VAR(equals0)) == VAR(1),
                         "(countMatching([1, 2, 3], equals0) == 1)"
                 );
             });
 
             check.when("allAnyOrNone", [&] {
-                check(allOf(constVec, VAL(equals1)));
-                expectFailure(check, allOf(intVec, VAL(equals1)), "allOf([1, 2, 3], equals1)");
+                check(allOf(constVec, VAR(equals1)));
+                expectFailure(check, allOf(intVec, VAR(equals1)), "allOf([1, 2, 3], equals1)");
 
-                check(anyOf(intVec, VAL(equals1)));
-                expectFailure(check, anyOf(intVec, VAL(equals0)), "anyOf([1, 2, 3], equals0)");
+                check(anyOf(intVec, VAR(equals1)));
+                expectFailure(check, anyOf(intVec, VAR(equals0)), "anyOf([1, 2, 3], equals0)");
 
-                check(noneOf(intVec, VAL(equals0)));
-                expectFailure(check, noneOf(intVec, VAL(equals1)), "noneOf([1, 2, 3], equals1)");
+                check(noneOf(intVec, VAR(equals0)));
+                expectFailure(check, noneOf(intVec, VAR(equals1)), "noneOf([1, 2, 3], equals1)");
             });
 
             check.when("length", [&] {
-                check(length(VAL(intVec)) == 3u);
-                check(length(VAL(constVec)) == 4u);
-                expectFailure(check, length(VAL(intVec)) == 0u, "(length(intVec) == 0)");
+                check(length(VAR(intVec)) == 3u);
+                check(length(VAR(constVec)) == 4u);
+                expectFailure(check, length(VAR(intVec)) == 0u, "(length(intVec) == 0)");
             });
 
             check.when("equalRanges", [&] {
@@ -290,7 +290,7 @@ namespace Enhedron {
                     check(startsWith(intVec, start));
                     check(!startsWith(intVec, last));
                     check(!startsWith(intVec, larger));
-                    expectFailure(check, startsWith(intVec, VAL(smaller)), "startsWith([1, 2, 3], smaller)");
+                    expectFailure(check, startsWith(intVec, VAR(smaller)), "startsWith([1, 2, 3], smaller)");
                 });
 
                 check.when("endsWith", [&] {
@@ -298,7 +298,7 @@ namespace Enhedron {
                     check(!endsWith(intVec, start));
                     check(endsWith(intVec, last));
                     check(!endsWith(intVec, larger));
-                    expectFailure(check, endsWith(intVec, VAL(smaller)), "endsWith([1, 2, 3], smaller)");
+                    expectFailure(check, endsWith(intVec, VAR(smaller)), "endsWith([1, 2, 3], smaller)");
                 });
 
                 check.when("contains", [&] {
@@ -306,49 +306,49 @@ namespace Enhedron {
                     check(contains(intVec, start));
                     check(contains(intVec, last));
                     check(!contains(intVec, larger));
-                    expectFailure(check, contains(intVec, VAL(smaller)), "contains([1, 2, 3], smaller)");
+                    expectFailure(check, contains(intVec, VAR(smaller)), "contains([1, 2, 3], smaller)");
                 });
             });
         }),
         given("ValueSemantics", [] (Check& check) {
             MoveTracker moveTracker;
 
-            VAL(moveTracker);
-            check("We don't steal the expression object", ! VAL(moveTracker.moved()));
+            VAR(moveTracker);
+            check("We don't steal the expression object", ! VAR(moveTracker.moved()));
 
-            VAL([] (const MoveTracker&) {}) (moveTracker);
-            check("We don't steal function arguments", ! VAL(moveTracker.moved()));
+            VAR([] (const MoveTracker&) {}) (moveTracker);
+            check("We don't steal function arguments", ! VAR(moveTracker.moved()));
 
             // gcc sanitizers will hopefully pick up any stored refs to temporaries
             int a = 1;
             int b = 1;
-            check("We don't store refs to temporaries", VAL(a + b) == 2);
+            check("We don't store refs to temporaries", VAR(a + b) == 2);
 
             const int c = 1;
-            check("Const is preserved on lvalue refs", VAL(c) == 1);
+            check("Const is preserved on lvalue refs", VAR(c) == 1);
 
             namespace Conf = Assertion::Impl::Configurable;
 
             static_assert(
-                    is_same<decltype(VAL(a + b)), Conf::VariableValueExpression<int>>::value,
+                    is_same<decltype(VAR(a + b)), Conf::VariableValueExpression<int>>::value,
                     "Temporaries are stored by value"
                 );
 
             static_assert(
-                    is_same<decltype(VAL(a)), Conf::VariableRefExpression<int>>::value,
+                    is_same<decltype(VAR(a)), Conf::VariableRefExpression<int>>::value,
                     "Variables are stored by reference"
             );
 
             const auto aConst = a;
 
             static_assert(
-                    is_same<decltype(VAL(aConst)), Conf::VariableRefExpression<const int>>::value,
+                    is_same<decltype(VAR(aConst)), Conf::VariableRefExpression<const int>>::value,
                     "const is preserved"
             );
 
             static_assert(
                 is_same<
-                    decltype(VAL(id)(a + b)),
+                    decltype(VAR(id)(a + b)),
                     Conf::FunctionValue<reference_wrapper<int(int)>, int>
                 >::value,
                 "Temporaries are stored by value"
@@ -356,7 +356,7 @@ namespace Enhedron {
 
             static_assert(
                 is_same<
-                    decltype(VAL(id)(a)),
+                    decltype(VAR(id)(a)),
                     Conf::FunctionValue<reference_wrapper<int(int)>, int&>
                 >::value,
                 "Values are stored by reference"
@@ -364,21 +364,21 @@ namespace Enhedron {
         }),
         given("ThrowSucceeds", [] (Check& check) {
             RecordFailures recordFailures;
-            testAssertThrows<exception>(out(recordFailures), VAL([] { throw runtime_error("test"); })());
-            testAssertThrows<runtime_error>(out(recordFailures), VAL([] { throw runtime_error("test"); })());
+            testAssertThrows<exception>(out(recordFailures), VAR([] { throw runtime_error("test"); })());
+            testAssertThrows<runtime_error>(out(recordFailures), VAR([] { throw runtime_error("test"); })());
 
-            check( ! VAL(bool(recordFailures.failure())));
+            check( ! VAR(bool(recordFailures.failure())));
         }),
         given("ThrowFails", [] (Check& check) {
             expectException<logic_error>(
                     check,
-                    VAL([] { throw runtime_error("test"); })(),
+                    VAR([] { throw runtime_error("test"); })(),
                     "[] { throw runtime_error(\"test\"); }() threw \"test\""
                 );
 
             expectException<runtime_error>(
                     check,
-                    VAL([] {} )(),
+                    VAR([] {} )(),
                     "[] {}()"
             );
 
