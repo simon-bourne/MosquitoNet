@@ -4,10 +4,19 @@ containers:
     - !UbuntuRelease { version: 15.10 }
     - !UbuntuUniverse
     - !Install [ make, cmake, clang, gcc, g++, libboost-all-dev, ca-certificates, gdbserver ]
+    - !Install [ ruby, ruby-dev, zlib1g-dev ]
+    - !Sh "gem install copyright-header"
     volumes:
       /tmp: !Tmpfs {size: 1Gi}
 
 commands:
+  add-copyright-headers: !Command
+    description: Add copyright header to C++ files
+    accepts-arguments: true
+    container: build
+    work-dir: .
+    run: |
+      copyright-header/add-header "$@"
   build: !Command
     description: Build C++
     accepts-arguments: false
