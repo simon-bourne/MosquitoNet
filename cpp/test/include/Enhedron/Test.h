@@ -6,4 +6,5 @@
 //
 
 #include "Enhedron/Test/Suite.h"
+#include "Enhedron/Test/Harness.h"
 #include "Enhedron/Assertion/Functions.h"

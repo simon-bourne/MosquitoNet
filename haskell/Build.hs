@@ -101,6 +101,10 @@ main = shakeArgs shakeOptions{shakeFiles = "../build"} $ do
     let singleHeader = buildDir </> "MosquitoNet.h"
     let inputHeader = "Enhedron/Test.h"
 
+    phony "clean" $ do
+        putNormal "Cleaning files in build"
+        removeFilesAfter "../build" ["//*"]
+
     want [singleHeader]
     
     singleHeader %> \out -> do
