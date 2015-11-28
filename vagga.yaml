@@ -1,11 +1,23 @@
 containers:
+  copyright-header:
+    setup:
+    - !UbuntuRelease { version: 15.10 }
+    - !UbuntuUniverse
+    - !Install [ make, cmake, clang, gcc, g++, libboost-all-dev, ca-certificates, gdbserver, haskell-platform ]
+    - !Install [ ca-certificates, ruby, ruby-dev, zlib1g-dev ]
+    - !Sh |
+        gem install copyright-header
+
   build:
     setup:
     - !UbuntuRelease { version: 15.10 }
     - !UbuntuUniverse
-    - !Install [ make, cmake, clang, gcc, g++, libboost-all-dev, ca-certificates, gdbserver ]
-    - !Install [ ruby, ruby-dev, zlib1g-dev ]
-    - !Sh "gem install copyright-header"
+    - !Install [ make, cmake, clang, gcc, g++, libboost-all-dev, ca-certificates, gdbserver, haskell-platform ]
+    - !Env
+      HOME: /root # For cabal
+    - !Sh |
+        cabal update
+        cabal install megaparsec shake text
     volumes:
       /tmp: !Tmpfs {size: 1Gi}
 
@@ -13,7 +25,7 @@ commands:
   add-copyright-headers: !Command
     description: Add copyright header to C++ files
     accepts-arguments: true
-    container: build
+    container: copyright-header
     work-dir: .
     run: |
       copyright-header/add-header "$@"
@@ -66,4 +78,12 @@ commands:
     work-dir: .
     run: |
       build/clang/integration-test "$@"
+  shake: !Command
+    description: Run shake
+    accepts-arguments: true
+    container: build
+    work-dir: haskell
+    environ: { HOME: /root }
+    run: |
+      ./Build.hs "$@"
 
