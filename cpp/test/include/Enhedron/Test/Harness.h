@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "Enhedron/Test.h"
+#include "Enhedron/Test/Suite.h"
 #include "Enhedron/CommandLine/Parameters.h"
 
 #include <string>
@@ -38,7 +38,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
     using CommandLine::Name;
     using CommandLine::Arguments;
 
-    Verbosity parseVerbosity(string v) {
+    inline Verbosity parseVerbosity(string v) {
         transform(v.begin(), v.end(), v.begin(),
                   [](char c) { return tolower(c, locale()); } );
 
@@ -55,7 +55,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
         throw runtime_error("Unknown verbosity \"" + v + "\"");
     }
 
-    ExitStatus runTests(bool listOnly, string verbosityString, vector<string> pathList) {
+    inline ExitStatus runTests(bool listOnly, string verbosityString, vector<string> pathList) {
         vector<shared_ptr<vector<regex>>> pathRegexs;
 
         for (auto& path : pathList) {
@@ -110,7 +110,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
         return ExitStatus::OK;
     }
 
-    int run(int argc, const char* argv[]) {
+    inline int run(int argc, const char* argv[]) {
         Arguments args("MosquitoNet test harness version 0.0.0");
         args.setDescription("Test Harness");
         args.setPositionalDescription("TEST_PATH");
