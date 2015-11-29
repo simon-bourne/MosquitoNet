@@ -25,4 +25,3 @@ add_executable(test-harness
         cpp/test/src/TestCommandLine.cpp)
 
 add_executable(integration-test cpp/test/src/TestHarness.cpp cpp/test/src/IntegrationTest.cpp)
-target_include_directories(integration-test PRIVATE build)
