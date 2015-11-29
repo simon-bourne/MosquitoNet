@@ -2,13 +2,14 @@
 
 {-# LANGUAGE OverloadedStrings #-}
 
-import Prelude hiding (lines, unlines, readFile, writeFile, appendFile, concat)
+import Prelude hiding (lines, unlines, readFile, writeFile, appendFile)
 import Development.Shake
 import Development.Shake.Command
 import Development.Shake.FilePath
 import Development.Shake.Util
 import Control.Applicative ((<$>))
-import Data.Text (Text, lines, unlines, pack, unpack, concat)
+import Data.Text (Text, lines, unlines, pack, unpack)
+import qualified Data.Text as Text (concat)
 import Data.Text.IO (readFile, writeFile, appendFile)
 import Text.Megaparsec
 import qualified Text.Megaparsec.Lexer as Lexer
@@ -70,7 +71,7 @@ readHeader includeDirs file = do
     contents <- readFile fullPath
     let parsedContents = parseInclude <$> (filter notPragmaOnce $ lines contents)
     let includes = rights parsedContents
-    let header = concat ["// File: ", pack file]
+    let header = Text.concat ["// File: ", pack file]
     let code = unlines (header : lefts parsedContents)
 
     return (unpack <$> includes, fullPath, code)
@@ -79,7 +80,7 @@ readAllHeaders :: [FilePath] -> FilePath -> IO [(FilePath, Text)]
 readAllHeaders includeDirs file = do
     (includes, fullPath, code) <- readHeader includeDirs file
     dependancies <- mapM (readAllHeaders includeDirs) includes
-    return $ foldr (++) [(fullPath, code)] dependancies
+    return $ concat ([(fullPath, code)] : dependancies)
 
 buildHeader :: FilePath -> IO ([FilePath], Text)
 buildHeader header = do
@@ -91,7 +92,7 @@ buildHeader header = do
             | isInfixOf [path] seen = removeLaterDuplicates seen hs
             | otherwise = h : removeLaterDuplicates (path : seen) hs
 
-        joinHeaders (path, code) (pathList, headerCode) = (path : pathList, concat [code, headerCode])
+        joinHeaders (path, code) (pathList, headerCode) = (path : pathList, Text.concat [code, headerCode])
 
 writeHeader :: FilePath -> Text -> IO ()
 writeHeader out source = do
@@ -99,11 +100,11 @@ writeHeader out source = do
     writeFile out $ unlines [
         "// This file is generated automatically. Do not edit.",
         "",
-        concat ["#ifndef ", includeGuard],
-        concat ["#define ", includeGuard],
+        Text.concat ["#ifndef ", includeGuard],
+        Text.concat ["#define ", includeGuard],
         ""]
     appendFile out source
-    appendFile out $ unlines ["", concat ["#endif /* ", includeGuard, " */"], ""]
+    appendFile out $ unlines ["", Text.concat ["#endif /* ", includeGuard, " */"], ""]
 
 main :: IO ()
 main = shakeArgs shakeOptions{shakeFiles = "../build"} $ do
