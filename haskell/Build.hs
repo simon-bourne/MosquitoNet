@@ -53,42 +53,52 @@ parseInclude input = either (const $ Left input) Right $ runParser include "C++ 
         between quote quote (pack <$> many (noneOf "\""))
     quote = char '\"'
 
-readHeader :: [FilePath] -> FilePath -> IO (FilePath, Text)
-readHeader includeDirs file = do
+findHeader :: [FilePath] -> FilePath -> IO FilePath
+findHeader includeDirs file = do
     existingFiles <- liftIO $ filterM SD.doesFileExist fullPaths
     case existingFiles of
         []  -> showError "Couldn't find"
-        [f] -> do
-            contents <- readFile f
-            return (f, contents)                        
-
+        [f] -> return f
         _   -> showError "Found multiple"
     where
         showError m = error ("Error: " ++ m ++ " \"" ++ file ++ "\"")
         fullPaths = (</> file) <$> includeDirs
 
-readAllHeaders :: [FilePath] -> [FilePath] -> [FilePath] -> IO ([FilePath], Text)
-readAllHeaders _ _ [] = return ([], "")
-readAllHeaders includeDirs seenFiles (file : files)
-    | isInfixOf [file] seenFiles = readAllHeaders includeDirs seenFiles files
-    | otherwise = do
-        (fullPath, contents) <- readHeader includeDirs file
-        let parsedContents = parseInclude <$> (filter notPragmaOnce $ lines contents)
-        let includes = rights parsedContents
-        let code = unlines $ lefts parsedContents
+readHeader :: [FilePath] -> FilePath -> IO ([FilePath], FilePath, Text)
+readHeader includeDirs file = do
+    fullPath <- findHeader includeDirs file
+    contents <- readFile fullPath
+    let parsedContents = parseInclude <$> (filter notPragmaOnce $ lines contents)
+    let includes = rights parsedContents
+    let header = concat ["// File: ", pack file]
+    let code = unlines (header : lefts parsedContents)
 
-        (externalIncludes, externalCode) <- readAllHeaders includeDirs (file : seenFiles) (files ++ map unpack includes)
-        let allCode = unlines [pack ("// File: " ++ file), code, externalCode]
+    return (unpack <$> includes, fullPath, code)
 
-        return (fullPath : externalIncludes, allCode)
+readAllHeaders :: [FilePath] -> FilePath -> IO [(FilePath, Text)]
+readAllHeaders includeDirs file = do
+    (includes, fullPath, code) <- readHeader includeDirs file
+    dependancies <- mapM (readAllHeaders includeDirs) includes
+    return $ foldr (++) [(fullPath, code)] dependancies
 
 buildHeader :: FilePath -> IO ([FilePath], Text)
-buildHeader header = readAllHeaders ["../cpp/test/include", "../cpp/lib/include"] [] [header]
+buildHeader header = do
+    headerData <- readAllHeaders ["../cpp/test/include", "../cpp/lib/include"] header
+    return $ foldr joinHeaders ([], "") (removeLaterDuplicates [] headerData)
+      where
+        removeLaterDuplicates _ [] = []
+        removeLaterDuplicates seen (h@(path, code) : hs)
+            | isInfixOf [path] seen = removeLaterDuplicates seen hs
+            | otherwise = h : removeLaterDuplicates (path : seen) hs
+
+        joinHeaders (path, code) (pathList, headerCode) = (path : pathList, concat [code, headerCode])
 
 writeHeader :: FilePath -> Text -> IO ()
 writeHeader out source = do
     let includeGuard = "ENHEDRON_MOSQUITONET_H_"
     writeFile out $ unlines [
+        "// This file is generated automatically. Do not edit.",
+        "",
         concat ["#ifndef ", includeGuard],
         concat ["#define ", includeGuard],
         ""]

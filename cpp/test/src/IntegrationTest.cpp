@@ -7,6 +7,8 @@
 
 #include "Enhedron/Test.h"
 
+#include <array>
+
 namespace Enhedron {
     using std::array;
     using namespace Test;
