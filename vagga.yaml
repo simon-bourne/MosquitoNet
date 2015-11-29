@@ -17,7 +17,7 @@ containers:
       HOME: /root # For cabal
     - !Sh |
         cabal update
-        cabal install megaparsec shake text
+        cabal install filemanip megaparsec shake text
     volumes:
       /tmp: !Tmpfs {size: 1Gi}
 
