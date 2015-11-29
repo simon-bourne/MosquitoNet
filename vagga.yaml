@@ -3,8 +3,7 @@ containers:
     setup:
     - !UbuntuRelease { version: 15.10 }
     - !UbuntuUniverse
-    - !Install [ make, cmake, clang, gcc, g++, libboost-all-dev, ca-certificates, gdbserver, haskell-platform ]
-    - !Install [ ca-certificates, ruby, ruby-dev, zlib1g-dev ]
+    - !Install [ ca-certificates, ruby, ruby-dev, zlib1g-dev, make, build-essential, libicu-dev ]
     - !Sh |
         gem install copyright-header
 
@@ -12,7 +11,7 @@ containers:
     setup:
     - !UbuntuRelease { version: 15.10 }
     - !UbuntuUniverse
-    - !Install [ make, cmake, clang, gcc, g++, libboost-all-dev, ca-certificates, gdbserver, haskell-platform ]
+    - !Install [ make, cmake, clang, gcc, g++, libboost-all-dev, ca-certificates, gdbserver, haskell-platform, rsync ]
     - !Env
       HOME: /root # For cabal
     - !Sh |
