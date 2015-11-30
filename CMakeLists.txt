@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.7)
-project(Enhedron)
+project(MosquitoNet)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL Clang)
     # using Clang
@@ -16,12 +16,6 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL MSVC)
     set(LINK_FLAGS "${LINK_FLAGS} /SUBSYSTEM:CONSOLE")
 endif()
 
-include_directories(cpp/test/include cpp/lib/include)
+include_directories(cpp/single-include)
 
-add_executable(test-harness
-        cpp/test/src/Test/Harness.cpp
-        cpp/test/src/Test/Util.cpp
-        cpp/test/src/Test/Assert.cpp
-        cpp/test/src/Test/CommandLine.cpp)
-
-add_executable(integration-test cpp/test/src/Test/Harness.cpp cpp/test/src/Test/Integration.cpp)
+add_executable(single-include cpp/test/src/SingleIncludeHarness.cpp cpp/test/src/SingleInclude.cpp)
