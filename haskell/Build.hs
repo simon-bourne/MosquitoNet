@@ -11,10 +11,9 @@ import Data.Text (Text)
 lastN :: Int -> [a] -> [a]
 lastN n xs = drop (length xs - n) xs
 
--- TODO: Rename some constants
-buildDir, moduleDir, enhedron, cppTestDir :: FilePath
+buildDir, moduleFilesDir, enhedron, cppTestDir :: FilePath
 buildDir = "../build"
-moduleDir = "../modules"
+moduleFilesDir = "../modules"
 enhedron = "Enhedron"
 cppTestDir = "cpp/test/src"
 
@@ -72,9 +71,13 @@ singleHeaderRules destName singleHeaderDeps singleHeaderContents = do
       where
         destDir = buildDir </> destName
 
+testLogTarget :: FilePath -> FilePath -> FilePath -> FilePath -> FilePath
+testLogTarget compiler variant includeType name =
+    buildDir </> "test" </> compiler </> variant </> includeType </> name <.> "log"
+
 testMatrix :: [FilePath] -> [FilePath] -> [(FilePath, FilePath)] -> [FilePath]
 testMatrix compilers variants exeDetails =
-    [buildDir </> "test" </> c </> v </> t </> n <.> "log" | c <- compilers, v <- variants, (t, n) <- exeDetails ]
+    [testLogTarget c v t n | c <- compilers, v <- variants, (t, n) <- exeDetails ]
 
 rules :: FilePath -> FilePath -> [FilePath] -> [FilePath] -> Rules ()
 rules sourceName destName allModuleFiles allCppSrcFiles = do
@@ -82,16 +85,24 @@ rules sourceName destName allModuleFiles allCppSrcFiles = do
     let destCppTestDir = destDir </> cppTestDir
     let allCppSrcTargets = (destCppTestDir </>) <$> (dropDirectory 5 <$> allCppSrcFiles)
     let allModuleTargets = (destDir </>) <$> (dropDirectory 3 <$> allModuleFiles)
+    let licenseFilename = "LICENSE_1.0.txt"
+    let licenseTarget = destDir </> licenseFilename
 
     phony "clean" $ do
         putNormal "Cleaning files in build"
         removeFilesAfter "../build" ["//*"]
 
+    phony "quick" $ do
+        testOutput <- readFile' $ testLogTarget "gcc" "Debug" "multi-include" "test-harness"
+        putNormal testOutput
+
     let compilers = ["gcc", "clang-3.6"]
     let variants = ["Debug", "Release"]
     let exesDetail = [("single-include", "single-include"), ("multi-include", "test-harness")]
 
-    want (allModuleTargets ++ testMatrix compilers variants exesDetail)
+    want (licenseTarget : allModuleTargets ++ testMatrix compilers variants exesDetail)
+
+    licenseTarget %> \out -> copyFile' (".." </> licenseFilename) out
 
     buildDir </> "exe/*/*/single-include/*" %> \out -> do
         mkDir destCppTestDir
@@ -111,7 +122,7 @@ rules sourceName destName allModuleFiles allCppSrcFiles = do
         putNormal "Running rsync"
         need allModuleFiles
 
-        unit $ cmd "rsync" "-az" "--delete" "--exclude" "/cpp/" ((moduleDir </> sourceName) ++ "/") destDir
+        unit $ cmd "rsync" "-az" "--delete" "--exclude" "/cpp/" ((moduleFilesDir </> sourceName) ++ "/") destDir
 
     allCppSrcTargets &%> \_ -> do
         let srcCppTestDir = (".." </> cppTestDir </> sourceName) ++ "/"
@@ -124,7 +135,7 @@ rules sourceName destName allModuleFiles allCppSrcFiles = do
 
 main :: IO ()
 main = do
-    allModuleFiles <- allFilesIn moduleDir
+    allModuleFiles <- allFilesIn moduleFilesDir
     allCppSourceFiles <- allFilesIn (".." </> cppTestDir </> sourceName)
     let inputHeader = enhedron </> sourceName <.> "h"
     (singleHeaderIncludes, singleHeaderContents) <- buildHeader inputHeader

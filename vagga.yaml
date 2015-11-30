@@ -4,8 +4,7 @@ containers:
     - !UbuntuRelease { version: 15.10 }
     - !UbuntuUniverse
     - !Install [ ca-certificates, ruby, ruby-dev, zlib1g-dev, make, build-essential, libicu-dev ]
-    - !Sh |
-        gem install copyright-header
+    - !Sh gem install copyright-header
 
   build:
     setup:
@@ -26,63 +25,26 @@ commands:
     accepts-arguments: true
     container: copyright-header
     work-dir: .
-    run: |
-      copyright-header/add-header "$@"
-  build: !Command
-    description: Build C++
-    accepts-arguments: false
-    container: build
-    work-dir: .
-    run: |
-      mkdir -p build/gcc
-      cd build/gcc
-      cmake ../..
-      make -j 8
-  build-clang: !Command
-    description: Build C++ with clang
-    accepts-arguments: false
-    container: build
-    work-dir: .
-    environ: { CMAKE_BUILD_TYPE: Release, CXX: clang++-3.6, CC: clang-3.6 }
-    run: |
-      mkdir -p build/clang
-      cd build/clang
-      cmake ../..
-      make -j 8
+    run: copyright-header/add-header "$@"
   test: !Command
-    description: Run tests
-    accepts-arguments: true
-    container: build
-    work-dir: .
-    run: |
-      build/gcc/test-harness "$@"
-  test-clang: !Command
-    description: Run tests built with clang
-    accepts-arguments: true
-    container: build
-    work-dir: .
-    run: |
-      build/clang/test-harness "$@"
-  integration-test: !Command
-    description: Run tests
-    accepts-arguments: true
-    container: build
-    work-dir: .
-    run: |
-      build/gcc/integration-test "$@"
-  integration-test-clang: !Command
-    description: Run tests
-    accepts-arguments: true
-    container: build
-    work-dir: .
-    run: |
-      build/clang/integration-test "$@"
-  shake: !Command
-    description: Run shake
+    description: Build and test everything
     accepts-arguments: true
     container: build
     work-dir: haskell
     environ: { HOME: /root }
-    run: |
-      ./Build.hs "$@"
+    run: ./Build.hs "$@"
+  quick: !Command
+    description: Build gcc Debug and run tests
+    accepts-arguments: false
+    container: build
+    work-dir: haskell
+    environ: { HOME: /root }
+    run: ./Build.hs quick
+  clean: !Command
+    description: Clean build and test results
+    accepts-arguments: false
+    container: build
+    work-dir: haskell
+    environ: { HOME: /root }
+    run: ./Build.hs clean
 
