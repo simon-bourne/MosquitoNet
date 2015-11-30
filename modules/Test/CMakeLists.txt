@@ -16,12 +16,6 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL MSVC)
     set(LINK_FLAGS "${LINK_FLAGS} /SUBSYSTEM:CONSOLE")
 endif()
 
-include_directories(cpp/test/include cpp/lib/include)
+include_directories(cpp/single-include)
 
-add_executable(test-harness
-        cpp/test/src/TestHarness.cpp
-        cpp/test/src/TestUtil.cpp
-        cpp/test/src/TestAssert.cpp
-        cpp/test/src/TestCommandLine.cpp)
-
-add_executable(integration-test cpp/test/src/TestHarness.cpp cpp/test/src/IntegrationTest.cpp)
+add_executable(single-include cpp/test/src/SingleIncludeHarness.cpp cpp/test/src/SingleInclude.cpp)

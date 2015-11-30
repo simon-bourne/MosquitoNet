@@ -9,14 +9,11 @@ import qualified Data.Text as Text (concat)
 import Data.Text.IO (readFile, writeFile, appendFile)
 import Text.Megaparsec
 import qualified Text.Megaparsec.Lexer as Lexer
-import Text.Megaparsec.Char (spaceChar)
 import Data.Either (isLeft, lefts, rights)
 import Control.Monad (void, filterM)
 import Data.List (isInfixOf)
-import Development.Shake
-import Development.Shake.Command
-import Development.Shake.FilePath
-import Development.Shake.Util
+import Development.Shake.FilePath ((</>))
+import System.Directory (doesFileExist)
 
 type Lexer = Parsec Text
 
@@ -53,7 +50,7 @@ parseInclude input = either (const $ Left input) Right $ runParser include "C++ 
         between quote quote (pack <$> many (noneOf "\""))
     quote = char '\"'
 
-findHeader :: [FilePath] -> FilePath -> Action FilePath
+findHeader :: [FilePath] -> FilePath -> IO FilePath
 findHeader includeDirs file = do
     existingFiles <- filterM doesFileExist fullPaths
     case existingFiles of
@@ -64,10 +61,10 @@ findHeader includeDirs file = do
         showError m = error ("Error: " ++ m ++ " \"" ++ file ++ "\"")
         fullPaths = (</> file) <$> includeDirs
 
-readHeader :: [FilePath] -> FilePath -> Action ([FilePath], FilePath, Text)
+readHeader :: [FilePath] -> FilePath -> IO ([FilePath], FilePath, Text)
 readHeader includeDirs file = do
     fullPath <- findHeader includeDirs file
-    contents <- liftIO $ readFile fullPath
+    contents <- readFile fullPath
     let parsedContents = parseInclude <$> (filter notPragmaOnce $ lines contents)
     let includes = rights parsedContents
     let header = Text.concat ["// File: ", pack file]
@@ -75,33 +72,32 @@ readHeader includeDirs file = do
 
     return (unpack <$> includes, fullPath, code)
 
-readAllHeaders :: [FilePath] -> FilePath -> Action [(FilePath, Text)]
+readAllHeaders :: [FilePath] -> FilePath -> IO [(FilePath, Text)]
 readAllHeaders includeDirs file = do
     (includes, fullPath, code) <- readHeader includeDirs file
     dependancies <- mapM (readAllHeaders includeDirs) includes
-    return $ concat ([(fullPath, code)] : dependancies)
+    return $ (concat dependancies ++ [(fullPath, code)])
 
-buildHeader :: FilePath -> Action ([FilePath], Text)
+buildHeader :: FilePath -> IO ([FilePath], Text)
 buildHeader header = do
     headerData <- readAllHeaders ["../cpp/test/include", "../cpp/lib/include"] header
     return $ foldr joinHeaders ([], "") (removeLaterDuplicates [] headerData)
       where
         removeLaterDuplicates _ [] = []
-        removeLaterDuplicates seen (h@(path, code) : hs)
+        removeLaterDuplicates seen (h@(path, _) : hs)
             | isInfixOf [path] seen = removeLaterDuplicates seen hs
             | otherwise = h : removeLaterDuplicates (path : seen) hs
 
         joinHeaders (path, code) (pathList, headerCode) = (path : pathList, Text.concat [code, headerCode])
 
-writeHeader :: FilePath -> Text -> Action ()
+writeHeader :: FilePath -> Text -> IO ()
 writeHeader out source = do
     let includeGuard = "ENHEDRON_MOSQUITONET_H_"
-    liftIO $ do
-        writeFile out $ unlines [
-            "// This file is generated automatically. Do not edit.",
-            "",
-            Text.concat ["#ifndef ", includeGuard],
-            Text.concat ["#define ", includeGuard],
-            ""]
-        appendFile out source
-        appendFile out $ unlines ["", Text.concat ["#endif /* ", includeGuard, " */"], ""]
+    writeFile out $ unlines [
+        "// This file is generated automatically. Do not edit.",
+        "",
+        Text.concat ["#ifndef ", includeGuard],
+        Text.concat ["#define ", includeGuard],
+        ""]
+    appendFile out source
+    appendFile out $ unlines ["", Text.concat ["#endif /* ", includeGuard, " */"], ""]
