@@ -1,9 +1,0 @@
-version: 1.0.{build}
-os: Visual Studio 2015
-before_build:
-- cmd: cmake -G "Visual Studio 14 2015 Win64"
-build:
-  project: ALL_BUILD.vcxproj
-  verbosity: minimal
-test_script:
-- cmd: Debug\test-harness.exe
