@@ -530,6 +530,8 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 }}}}
 
 namespace Enhedron { namespace Test {
+    using namespace Assertion;
+
     using Impl::Impl_Suite::Suite;
     using Impl::Impl_Suite::context;
     using Impl::Impl_Suite::Check;
