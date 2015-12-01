@@ -6,7 +6,7 @@ Keep the bugs out on Linux, OS X and Windows.
 
   * Single header version makes it simple to get started.
   * Only one macro, which only adds file and line arguments to a simple function call. This means you're always dealing
-    with C++ code, so you could generate tests programatically.
+    with core C++ code, so you could generate tests programatically.
   * Simple tests or BDD style tests.
   * Parameterized tests.
   * Model checking. Specify a model and the values each argument can have and MosquitoNet will check every combination
@@ -46,7 +46,7 @@ static Suite u("Util",
     given("an empty set", [] (auto& check) {
         set<int> s;
 
-        // Upon failure, this will log "length(theSet) == 1", along with
+        // Upon failure, this will log "length(s) == 1", along with
         // the contents of the set.
         check("it is initially empty", length(VAR(s)) == 0u);
 

@@ -33,7 +33,7 @@ static Suite u("Util",
     given("an empty set", [] (auto& check) {
         set<int> s;
 
-        // Upon failure, this will log "length(theSet) == 1", along with
+        // Upon failure, this will log "length(s) == 1", along with
         // the contents of the set.
         check("it is initially empty", length(VAR(s)) == 0u);
 
