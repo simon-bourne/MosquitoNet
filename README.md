@@ -27,6 +27,7 @@ using namespace Enhedron::Test;
 using std::vector;
 using std::set;
 
+// We'll use this later in some parameterized tests.
 void checkVectorSize(Check& check, size_t size) {
     vector<int> v(size, 0);
     check(length(VAR(v)) == size);
@@ -41,6 +42,7 @@ static Suite u("Util",
         // along with the value of `a`.
         check(VAR(a) == 1);
     }),
+
     given("an empty set", [] (auto& check) {
         set<int> s;
 
@@ -65,9 +67,12 @@ static Suite u("Util",
             });
         });
     }),
+
     // Parameterized tests:
     given("a vector of size 0", checkVectorSize, 0),
     given("a vector of size 10", checkVectorSize, 10),
+
+    // Model checking.
     exhaustive(
             choice(0, 10, 20), // These are the values for `initialSize`.
             choice(0, 5, 10, 15, 20, 25) // and these are for `resizeTo`.
@@ -92,6 +97,7 @@ static Suite u("Util",
                 });
             }
     ),
+
     context("we can also nest contexts",
         context("to an arbitrary depth",
             given("an empty test to illustrate nesting", [] (auto& check) {
