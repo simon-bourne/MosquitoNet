@@ -54,28 +54,34 @@ static Suite u("Util",
             s.insert(1);
             check("the size is 1", length(VAR(s)) == 1u);
 
-            // The whole test will be run afresh for each path through the
-            // when blocks. In this case twice.
-            check.when("we add a different element, the size is 2", [&] {
+            // This test will run twice. The first time, it will run the when
+            // block labelled when("we add a different element"), but skip the
+            // when block labelled when("we add the same element"). The second
+            // time it runs, it will do the inverse. There can be an arbitrary
+            // number of when blocks within each block, nested to an arbitrary
+            // depth.
+            check.when("we add a different element", [&] {
                 s.insert(2);
-                check("the size is still 1", length(VAR(s)) == 2u);
+                check("the size is 2", length(VAR(s)) == 2u);
             });
 
-            check.when("we add the same element, the size is 1", [&] {
+            check.when("we add the same element", [&] {
                 s.insert(1);
                 check("the size is still 1", length(VAR(s)) == 1u);
             });
         });
     }),
 
-    // Parameterized tests:
+    // Parameterized tests. There can be any number or type of parameters.
     given("a vector of size 0", checkVectorSize, 0),
     given("a vector of size 10", checkVectorSize, 10),
 
     // Model checking.
     exhaustive(
-            choice(0, 10, 20), // These are the values for `initialSize`.
-            choice(0, 5, 10, 15, 20, 25) // and these are for `resizeTo`.
+            choice(0, 10, 20), // These are the 3 values for `initialSize`.
+            choice(0, 5, 10, 15, 20, 25) // and these are the 6 for `resizeTo`.
+                // This will run the test 3 * 6 = 18 times for every
+                // combination of arguments.
         ).
         given("a vector with some elements", [] (
                     Check& check,
@@ -100,7 +106,8 @@ static Suite u("Util",
 
     context("we can also nest contexts",
         context("to an arbitrary depth",
-            given("an empty test to illustrate nesting", [] (auto& check) {
+            given("an empty test to illustrate that tests can go here",
+                  [] (auto& check) {
             })
         )
     )
