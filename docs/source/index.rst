@@ -7,12 +7,16 @@ MosquitoNet: A C++ Testing Framework
 ====================================
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   introduction
-   gettingStarted
-   assertions
-   bddTests
-   parameterizedTests
-   modelChecking
-   supportedCompilers
+    introduction
+    gettingStarted
+    assertions
+    bddTests
+    parameterizedTests
+    modelChecking
+    customizingAssertions
+    prettyPrintingYourTypes
+    testHarnessCommandLine
+    customReporters
+    supportedCompilers
