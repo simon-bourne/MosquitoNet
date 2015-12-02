@@ -206,6 +206,8 @@ htmlhelp_basename = 'MosquitoNetdoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
+'classoptions': ',openany,oneside',
+'babel': '\\usepackage[english]{babel}',
 # The paper size ('letterpaper' or 'a4paper').
 #'papersize': 'letterpaper',
 
