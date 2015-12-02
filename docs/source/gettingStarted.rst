@@ -3,21 +3,16 @@ Getting Started
 
 Download the single header latest release of the single header, `MosquitoNet.h` from
 `here <https://raw.githubusercontent.com/simon-bourne/MosquitoNet/stable/cpp/single-include/MosquitoNet.h>`_.
-In the same directory as `MosquitoNet.h`, create a file `TestHarness.cpp` with this code in it:
+In the same directory as `MosquitoNet.h`, create a file `Harness.cpp` with this code in it:
 
-.. code-block:: c++
-
-    #include "MosquitoNet.h"
-
-    int main(int argc, const char* argv[]) {
-        return ::Enhedron::Test::run(argc, argv);
-    }
+.. literalinclude:: ../examples/Harness.cpp
+   :language: c++
 
 Then compile it with `g++` (version 5 or later, but 4.9 will work with `--std=c++1y`):
 
 .. code-block:: none
 
-    g++ --std=c++14 -o test-harness TestHarness.cpp
+    g++ --std=c++14 -o test-harness Harness.cpp
 
 Now run *./test-harness* and you should get this output:
 
