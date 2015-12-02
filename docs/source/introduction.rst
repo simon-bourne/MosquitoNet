@@ -20,7 +20,7 @@ Features
 Example
 -------
 
-This example shows most of the features of MosquitoNet. For a gentler introduction, see Getting Started.
+This example shows most of the features of MosquitoNet. For a gentler introduction, see :doc:`gettingStarted`.
 
 .. literalinclude:: ../examples/Introductory.cpp
    :language: c++
