@@ -1,9 +1,9 @@
 Getting Started
 ===============
 
-Download the single header latest release of the single header, `MosquitoNet.h` from
+Download the single header latest release of the single header, *MosquitoNet.h* from
 `here <https://raw.githubusercontent.com/simon-bourne/MosquitoNet/stable/cpp/single-include/MosquitoNet.h>`_.
-In the same directory as `MosquitoNet.h`, create a file `Harness.cpp` with this code in it:
+In the same directory as *MosquitoNet.h*, create a file *Harness.cpp* with this code in it:
 
 .. literalinclude:: ../examples/Harness.cpp
    :language: c++
@@ -20,7 +20,7 @@ Now run *./test-harness* and you should get this output:
 
     Totals: 0 tests, 0 checks, 0 fixtures
 
-Let's add a simple test. We'll check that the *empty()* method on a default constructed *vector<int>* gives *true*.
+Let's add a simple test. We'll just check the value of a variable.
 Edit your *TestHarness.cpp* so it contains:
 
 .. code-block:: c++

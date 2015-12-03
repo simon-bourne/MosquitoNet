@@ -5,4 +5,5 @@ include (CMakeLists.flags.txt)
 
 include_directories(cpp/single-include)
 
-add_executable(example cpp/test/src/Examples/Harness.cpp cpp/test/src/Examples/Introductory.cpp)
+add_executable(Harness cpp/test/src/Examples/Harness.cpp)
+add_executable(Introductory cpp/test/src/Examples/Harness.cpp cpp/test/src/Examples/Introductory.cpp)
