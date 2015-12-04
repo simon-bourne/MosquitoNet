@@ -9,6 +9,7 @@
 #include "Enhedron/Util/Enum.h"
 #include "Enhedron/Util/Json.h"
 #include "Enhedron/Util/Math.h"
+#include "Enhedron/Util/Lazy.h"
 
 #include <string>
 #include <utility>
@@ -127,6 +128,23 @@ namespace Enhedron {
                 check(VAR(makeDivisibleByRoundingUp(10u, 4u)) == 12u);
                 check(VAR(makeDivisibleByRoundingUp(10u, 5u)) == 10u);
             })
-        )
+        ),
+        given("a lazy value", [] (Check& check) {
+            int value = 0;
+            Lazy<int> lazyValue([&] { return ++value; });
+
+            check.when("we don't ask for the value", [&] {
+                check("it doesn't evaluate the value", VAR(value) == 0);
+            });
+
+            check.when("we ask for the value", [&] {
+                check("it evaluates the value", VAR(*lazyValue) == 1);
+
+                check.when("we ask for the value twice", [&] {
+                    check("it gives the same value", VAR(*lazyValue) == 1);
+                    check("it evaluates the value once", VAR(value) == 1);
+                });
+            });
+        })
     );
 }

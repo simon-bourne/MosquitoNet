@@ -1439,20 +1439,18 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
     public:
         virtual ~ResultTest() {}
         virtual unique_ptr<ResultTest> section(string description) = 0;
+        virtual void beforeFirstFailure() = 0;
         virtual void failByException(const exception& e) = 0;
+        virtual void finish(const Stats& stats) = 0;
     };
 
     class ResultContext: public NoCopy {
     public:
         virtual ~ResultContext() {}
         virtual unique_ptr<ResultContext> child(const string& name) = 0;
-        virtual void listTest(const string& name) = 0;
+        virtual void beforeFirstTestRuns() = 0;
+        virtual void beforeFirstFailure() = 0;
         virtual unique_ptr<ResultTest> test(const string& name) = 0;
-    };
-
-    class Results: public ResultContext {
-    public:
-        virtual ~Results() {}
         virtual void finish(const Stats& stats) = 0;
     };
 
@@ -1502,8 +1500,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
         virtual bool notifyPassing() const override { return verbosity_ >= Verbosity::CHECKS; }
 
+        virtual void beforeFirstFailure() override {}
+
         virtual void fail(optional<string> description, const string &expressionText, const vector <Variable> &variableList) override {
-            // TODO: Print out test details
             indent(1);
             (*outputStream_) << "CHECK FAILED: " << expressionText << "\n";
             printVariables(variableList);
@@ -1532,63 +1531,69 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
             indent(0);
             (*outputStream_) << "TEST FAILED WITH EXCEPTION: " << e.what() << endl;
         }
+
+        virtual void finish(const Stats& stats) override {}
+
     };
 
-    template<typename Base>
-    class HumanResultContext: public Base {
-        Out<ostream> outputStream_;
-        bool contextPrinted_ = false;
-        string path_;
+    class HumanResultContext final: public ResultContext {
+        Out <ostream> outputStream_;
         Verbosity verbosity_;
+        string path_;
 
-        void writeTestName(const string& testName) {
-            if (verbosity_ >= Verbosity::CONTEXTS) {
-                if (!contextPrinted_) {
-                    contextPrinted_ = true;
-                    *outputStream_ << path_ << "\n";
-                }
-            }
-
-            if (verbosity_ >= Verbosity::FIXTURES) {
-                *outputStream_ << "    Given: " << testName << endl;
-            }
-        }
     public:
-        HumanResultContext(Out<ostream> outputStream, const string& name, Verbosity verbosity) :
-            outputStream_(outputStream), path_(name), verbosity_(verbosity) {
+        HumanResultContext(Out<ostream> outputStream, Verbosity verbosity, const string& name) :
+                outputStream_(outputStream), verbosity_(verbosity), path_(name) {}
+
+        virtual void beforeFirstTestRuns() override {
+            if (verbosity_ >= Verbosity::CONTEXTS) {
+                *outputStream_ << path_ << "\n";
+            }
         }
+
+        virtual void beforeFirstFailure() override { }
 
         virtual unique_ptr<ResultContext> child(const string& name) override {
             string childPath(path_);
-            
+
             if ( ! path_.empty()) {
                 childPath += "/";
             }
-            
-            childPath += name;
-            
-            return make_unique<HumanResultContext<ResultContext>>(outputStream_, childPath, verbosity_);
-        }
 
-        virtual void listTest(const string& name) override {
-            writeTestName(name);
+            childPath += name;
+
+            return make_unique<HumanResultContext>(outputStream_, verbosity_, childPath);
         }
 
         virtual unique_ptr<ResultTest> test(const string& name) override {
-            writeTestName(name);
+            if (verbosity_ >= Verbosity::FIXTURES) {
+                *outputStream_ << "    Given: " << name << endl;
+            }
+
             return make_unique<HumanResultTest>(outputStream_, 0, verbosity_);
         }
+
+        virtual void finish(const Stats& stats) override {}
     };
 
-    class HumanResults final: public HumanResultContext<Results> {
-        Out<ostream> outputStream_;
+    class HumanResultRootContext final: public ResultContext {
+        Out <ostream> outputStream_;
         Verbosity verbosity_;
     public:
-        HumanResults(Out<ostream> outputStream, Verbosity verbosity) :
-                HumanResultContext(outputStream, "", verbosity),
-                outputStream_(outputStream),
-                verbosity_(verbosity)
-        {}
+        HumanResultRootContext(Out<ostream> outputStream, Verbosity verbosity) :
+            outputStream_(outputStream), verbosity_(verbosity) {}
+
+        virtual void beforeFirstTestRuns() override { }
+
+        virtual void beforeFirstFailure() override { }
+
+        virtual unique_ptr<ResultContext> child(const string& name) override {
+            return make_unique<HumanResultContext>(outputStream_, verbosity_, name);
+        }
+
+        virtual unique_ptr<ResultTest> test(const string& name) override {
+            return make_unique<HumanResultTest>(outputStream_, 0, verbosity_);
+        }
 
         virtual void finish(const Stats& stats) override {
             if (verbosity_ >= Verbosity::SUMMARY) {
@@ -1610,10 +1615,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 }}}}
 
 namespace Enhedron { namespace Test {
-    using Impl::Impl_Results::Results;
     using Impl::Impl_Results::ResultContext;
     using Impl::Impl_Results::ResultTest;
-    using Impl::Impl_Results::HumanResults;
+    using Impl::Impl_Results::HumanResultRootContext;
     using Impl::Impl_Results::Stats;
     using Impl::Impl_Results::Verbosity;
 }}
@@ -1629,6 +1633,7 @@ namespace Enhedron { namespace Test {
 
 
 #include <functional>
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -1670,15 +1675,57 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     using std::regex;
     using std::regex_match;
     using std::reference_wrapper;
+    using std::min;
 
     using PathList = vector<shared_ptr<vector<regex>>>;
+
+    class ContextResultsRecorder final : public NoCopy {
+        using Stack = vector<unique_ptr<ResultContext>>;
+
+        Stack contextStack_;
+        size_t notifiedEnd = 0;
+    public:
+        ContextResultsRecorder(unique_ptr<ResultContext> root) {
+            contextStack_.emplace_back(move(root));
+        }
+
+        void pushContext(const string& name) {
+            contextStack_.emplace_back(contextStack_.back()->child(name));
+        }
+
+        void popContext(const Stats &stats) {
+            contextStack_.back()->finish(stats);
+            popContext();
+        }
+
+        void popContext() {
+            contextStack_.pop_back();
+            notifiedEnd = 0;
+        }
+
+        unique_ptr<ResultTest> test(const string &name) {
+            for (
+                    auto context = contextStack_.begin() + static_cast<Stack::difference_type>(notifiedEnd);
+                    context != contextStack_.end();
+                    ++context)
+            {
+                (*context)->beforeFirstTestRuns();
+            }
+
+            notifiedEnd = contextStack_.size();
+
+            return contextStack_.back()->test(name);
+        }
+    };
+
+    // TODO: WhenBlockResultRecorder
 
     class Context: public NoCopy {
     public:
         virtual ~Context() {}
 
-        virtual void list(const PathList& pathList, Out<ResultContext> results, size_t depth) const = 0;
-        virtual Stats run(const PathList& pathList, Out<ResultContext> results, size_t depth) = 0;
+        virtual void list(const PathList& pathList, Out<ContextResultsRecorder> results, size_t depth) const = 0;
+        virtual Stats run(const PathList& pathList, Out<ContextResultsRecorder> resultStack, size_t depth) = 0;
     };
 
     using ContextList = vector<unique_ptr<Context>>;
@@ -1689,20 +1736,20 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             instance().contextList.emplace_back(move(context));
         }
 
-        static void list(const PathList& pathList, Out<Results> results) {
+        static void list(const PathList& pathList, Out<ContextResultsRecorder> results) {
             for (const auto& context : instance().contextList) {
                 context->list(pathList, results, 0);
             }
         }
 
-        static Stats run(const PathList& pathList, Out<Results> results) {
+        static Stats run(const PathList& pathList, Out<ContextResultsRecorder> results) {
             Stats stats;
 
             for (const auto& context : instance().contextList) {
                 stats += context->run(pathList, results, 0);
             }
 
-            results->finish(stats);
+            results->popContext(stats);
             return stats;
         }
     private:
@@ -1724,28 +1771,31 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             contextList(move(contextList))
         {}
 
-        virtual void list(const PathList& pathList, Out<ResultContext> results, size_t depth) const override {
+        virtual void list(const PathList& pathList, Out<ContextResultsRecorder> results, size_t depth) const override {
             auto nextPathList = getMatchingPaths(pathList, depth);
-            auto resultChild = results->child(name);
+            results->pushContext(name);
 
             if (nextPathList) {
                 for (const auto& context : contextList) {
-                    context->list(*nextPathList, out(*resultChild), depth + 1);
+                    context->list(*nextPathList, results, depth + 1);
                 }
             }
+
+            results->popContext();
         }
 
-        virtual Stats run(const PathList& pathList, Out<ResultContext> results, size_t depth) override {
+        virtual Stats run(const PathList& pathList, Out<ContextResultsRecorder> results, size_t depth) override {
             Stats stats;
             auto nextPathList = getMatchingPaths(pathList, depth);
+            results->pushContext(name);
 
             if (nextPathList) {
-                auto resultChild = results->child(name);
-
                 for (const auto& context : contextList) {
-                    stats += context->run(*nextPathList, out(*resultChild), depth + 1);
+                    stats += context->run(*nextPathList, results, depth + 1);
                 }
             }
+
+            results->popContext(stats);
 
             return stats;
         }
@@ -1845,12 +1895,11 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                     whenCurrentStack.pop_back();
                 });
 
-                stats_.addTest();
-
                 functor();
             }
         }
 
+        // TODO: Return entire stack.
         Out<ResultTest> topResult() {
             if (whenCurrentStack.empty()) {
                 return results_;
@@ -1889,6 +1938,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
         template<typename... Args>
         bool operator()(Args&&... args) {
+            // TODO: Wrap with failure handler class that has when stack and context stack.
             return addCheck(CheckWithFailureHandler(
                     whenRunner_->topResult(),
                     forward<Args>(args)...
@@ -1921,17 +1971,22 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 element.current = 0;
             }
 
+            // TODO: Pass in context and when stack to this, so check can notify of first failure
             Check check(out(*this));
 
             try {
                 functor(check, forward<Args>(args)...);
             }
             catch (const exception& e) {
+                // TODO: if ( ! check.hasFailed()) results_->beforeFirstFailure();
                 results_->failByException(e);
                 stats_.failTest();
             }
 
-            stats_ += checkStats(check);
+            auto currentStats = checkStats(check);
+            currentStats.addTest();
+            results_->finish(currentStats);
+            stats_ += currentStats;
 
             while ( ! whenStack.empty() && topWhenDone()) {
                 whenStack.pop_back();
@@ -1977,17 +2032,21 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             name(move(name)), runTest(move(runTest)), args(forward<Args>(args)...)
         {}
 
-        virtual void list(const PathList& pathList, Out<ResultContext> results, size_t depth) const override {
+        virtual void list(const PathList& pathList, Out<ContextResultsRecorder> results, size_t depth) const override {
             if ( ! included(pathList, depth)) return;
 
-            results->listTest(name);
+            results->test(name);
         }
 
         // Must only be called once as it forwards the constructor arguments to the class.
-        virtual Stats run(const PathList& pathList, Out<ResultContext> results, size_t depth) override {
-            if ( ! included(pathList, depth)) return Stats{};
+        virtual Stats run(const PathList& pathList, Out<ContextResultsRecorder> results, size_t depth) override {
+            Stats stats;
 
-            return args.applyExtraBefore(runTest, name, results);
+            if (included(pathList, depth)) {
+                stats += args.applyExtraBefore(runTest, name, results);
+            }
+
+            return stats;
         }
     };
 
@@ -2004,12 +2063,14 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             runTest = move(other.runTest);
         }
 
-        Stats operator()(const string& name, Out<ResultContext> results, Args&&... args) {
+        Stats operator()(const string& name, Out<ContextResultsRecorder> results, Args&&... args) {
             auto test = results->test(name);
             WhenRunner whenRunner(out(*test));
             whenRunner.run(runTest, forward<Args>(args)...);
 
-            return whenRunner.stats();
+            auto stats = whenRunner.stats();
+
+            return stats;
         }
     };
 
@@ -2081,7 +2142,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
     public:
         RunExhaustive(Functor runTest, StoreArgs<Args...> args) : runTest(move(runTest)), args(move(args)) {}
 
-        Stats operator()(const string& name, Out<ResultContext> results) {
+        Stats operator()(const string& name, Out<ContextResultsRecorder> results) {
             auto test = results->test(name);
 
             return args.apply([&] (const Args&... extractedArgs) {
@@ -2120,24 +2181,24 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         return Exhaustive<DecayArrayAndFunction_t< Args>...>(forward<DecayArrayAndFunction_t< Args>>(args)...);
     }
 
-    inline void list(const PathList& pathList, Out<Results> results) {
-        Register::list(pathList, results);
+    inline void list(const PathList& pathList, unique_ptr<ResultContext> results) {
+        ContextResultsRecorder resultStack(move(results));
+        Register::list(pathList, out(resultStack));
     }
 
-    inline bool run(const PathList& pathList, Out<Results> results) {
-        auto stats = Register::run(pathList, results);
+    inline bool run(const PathList& pathList, unique_ptr<ResultContext> results) {
+        ContextResultsRecorder resultStack(move(results));
+        auto stats = Register::run(pathList, out(resultStack));
 
         return stats.failedTests() == 0 && stats.failedChecks() == 0;
     }
 
     inline void list(const PathList& pathList, Verbosity verbosity) {
-        HumanResults results(out(cout), verbosity);
-        list(pathList, out(results));
+        return list(pathList, make_unique<HumanResultRootContext>(out(cout), verbosity));
     }
 
     inline bool run(const PathList& pathList, Verbosity verbosity) {
-        HumanResults results(out(cout), verbosity);
-        return run(pathList, out(results));
+        return run(pathList, make_unique<HumanResultRootContext>(out(cout), verbosity));
     }
 }}}}
 

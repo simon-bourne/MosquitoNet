@@ -62,20 +62,18 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
     public:
         virtual ~ResultTest() {}
         virtual unique_ptr<ResultTest> section(string description) = 0;
+        virtual void beforeFirstFailure() = 0;
         virtual void failByException(const exception& e) = 0;
+        virtual void finish(const Stats& stats) = 0;
     };
 
     class ResultContext: public NoCopy {
     public:
         virtual ~ResultContext() {}
         virtual unique_ptr<ResultContext> child(const string& name) = 0;
-        virtual void listTest(const string& name) = 0;
+        virtual void beforeFirstTestRuns() = 0;
+        virtual void beforeFirstFailure() = 0;
         virtual unique_ptr<ResultTest> test(const string& name) = 0;
-    };
-
-    class Results: public ResultContext {
-    public:
-        virtual ~Results() {}
         virtual void finish(const Stats& stats) = 0;
     };
 
@@ -125,8 +123,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
         virtual bool notifyPassing() const override { return verbosity_ >= Verbosity::CHECKS; }
 
+        virtual void beforeFirstFailure() override {}
+
         virtual void fail(optional<string> description, const string &expressionText, const vector <Variable> &variableList) override {
-            // TODO: Print out test details
             indent(1);
             (*outputStream_) << "CHECK FAILED: " << expressionText << "\n";
             printVariables(variableList);
@@ -155,63 +154,69 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
             indent(0);
             (*outputStream_) << "TEST FAILED WITH EXCEPTION: " << e.what() << endl;
         }
+
+        virtual void finish(const Stats& stats) override {}
+
     };
 
-    template<typename Base>
-    class HumanResultContext: public Base {
-        Out<ostream> outputStream_;
-        bool contextPrinted_ = false;
-        string path_;
+    class HumanResultContext final: public ResultContext {
+        Out <ostream> outputStream_;
         Verbosity verbosity_;
+        string path_;
 
-        void writeTestName(const string& testName) {
-            if (verbosity_ >= Verbosity::CONTEXTS) {
-                if (!contextPrinted_) {
-                    contextPrinted_ = true;
-                    *outputStream_ << path_ << "\n";
-                }
-            }
-
-            if (verbosity_ >= Verbosity::FIXTURES) {
-                *outputStream_ << "    Given: " << testName << endl;
-            }
-        }
     public:
-        HumanResultContext(Out<ostream> outputStream, const string& name, Verbosity verbosity) :
-            outputStream_(outputStream), path_(name), verbosity_(verbosity) {
+        HumanResultContext(Out<ostream> outputStream, Verbosity verbosity, const string& name) :
+                outputStream_(outputStream), verbosity_(verbosity), path_(name) {}
+
+        virtual void beforeFirstTestRuns() override {
+            if (verbosity_ >= Verbosity::CONTEXTS) {
+                *outputStream_ << path_ << "\n";
+            }
         }
+
+        virtual void beforeFirstFailure() override { }
 
         virtual unique_ptr<ResultContext> child(const string& name) override {
             string childPath(path_);
-            
+
             if ( ! path_.empty()) {
                 childPath += "/";
             }
-            
-            childPath += name;
-            
-            return make_unique<HumanResultContext<ResultContext>>(outputStream_, childPath, verbosity_);
-        }
 
-        virtual void listTest(const string& name) override {
-            writeTestName(name);
+            childPath += name;
+
+            return make_unique<HumanResultContext>(outputStream_, verbosity_, childPath);
         }
 
         virtual unique_ptr<ResultTest> test(const string& name) override {
-            writeTestName(name);
+            if (verbosity_ >= Verbosity::FIXTURES) {
+                *outputStream_ << "    Given: " << name << endl;
+            }
+
             return make_unique<HumanResultTest>(outputStream_, 0, verbosity_);
         }
+
+        virtual void finish(const Stats& stats) override {}
     };
 
-    class HumanResults final: public HumanResultContext<Results> {
-        Out<ostream> outputStream_;
+    class HumanResultRootContext final: public ResultContext {
+        Out <ostream> outputStream_;
         Verbosity verbosity_;
     public:
-        HumanResults(Out<ostream> outputStream, Verbosity verbosity) :
-                HumanResultContext(outputStream, "", verbosity),
-                outputStream_(outputStream),
-                verbosity_(verbosity)
-        {}
+        HumanResultRootContext(Out<ostream> outputStream, Verbosity verbosity) :
+            outputStream_(outputStream), verbosity_(verbosity) {}
+
+        virtual void beforeFirstTestRuns() override { }
+
+        virtual void beforeFirstFailure() override { }
+
+        virtual unique_ptr<ResultContext> child(const string& name) override {
+            return make_unique<HumanResultContext>(outputStream_, verbosity_, name);
+        }
+
+        virtual unique_ptr<ResultTest> test(const string& name) override {
+            return make_unique<HumanResultTest>(outputStream_, 0, verbosity_);
+        }
 
         virtual void finish(const Stats& stats) override {
             if (verbosity_ >= Verbosity::SUMMARY) {
@@ -233,10 +238,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 }}}}
 
 namespace Enhedron { namespace Test {
-    using Impl::Impl_Results::Results;
     using Impl::Impl_Results::ResultContext;
     using Impl::Impl_Results::ResultTest;
-    using Impl::Impl_Results::HumanResults;
+    using Impl::Impl_Results::HumanResultRootContext;
     using Impl::Impl_Results::Stats;
     using Impl::Impl_Results::Verbosity;
 }}
