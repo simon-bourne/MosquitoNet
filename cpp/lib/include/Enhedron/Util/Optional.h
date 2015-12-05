@@ -49,6 +49,9 @@ namespace Enhedron { namespace Util { namespace Impl { namespace Impl_Optional {
             return *this;
         }
 
+        optional(optional<Value>&&) = default;
+        optional& operator=(optional<Value>&&) = default;
+
         optional(const Value& value) : value_(make_unique<Value>(value)) {}
         optional(Value&& value) : value_(make_unique<Value>(forward<Value>(value))) {}
         optional(None) {}

@@ -17,6 +17,9 @@ Keep the bugs out on Linux, OS X and Windows. MosquitoNet is a C++14 unit testin
 
 ## Example
 
+This example shows some of the more advanced features of MosquitoNet. For a quick-start guide, see
+[Getting Started](https://mosquitonet.readthedocs.org/en/latest/gettingStarted.html).
+
 ```C++
 #include "MosquitoNet.h"
 
