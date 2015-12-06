@@ -12,9 +12,7 @@ MosquitoNet: A C++ Testing Framework
     introduction
     gettingStarted
     assertions
-    bddTests
-    parameterizedTests
-    modelChecking
+    writingTests
     prettyPrintingYourTypes
     testHarnessCommandLine
     customReporters

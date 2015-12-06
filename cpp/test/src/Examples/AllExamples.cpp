@@ -26,9 +26,9 @@ void throwRuntimeError() {
     throw runtime_error("Expected exception");
 }
 
-// Assertion example 11:
+// Multiply example begin.
 int multiply(int x, int y) { return x * y; }
-// Assertion example 11 end.
+// Multiply example end.
 
 // Assertion example 14:
 template<typename Value>
@@ -110,3 +110,116 @@ static Suite t("examples", context("assertion",
         // Assertion example 16 end.
     })
 ));
+
+// Writing tests: contexts begin.
+static constexpr const int a = 1;
+
+static Suite u("the root context",
+    given("a test can go here", [] (auto& check) {
+        check("`a` is one", VAR(a) == 1);
+    }),
+    context("a context",
+        given("or a test can go here", [] (auto& check) {
+            check("`a` is one", VAR(a) == 1);
+        }),
+        context("contexts can be nested to arbitrary depth",
+            given("or a test can go here", [] (auto& check) {
+                check("`a` is one", VAR(a) == 1);
+            })
+        )
+    )
+);
+// Writing tests: contexts end.
+
+// Parameterized multiply test begin.
+void testMultiply(Check& check, int x, int y, int expectedResult) {
+    check.when("we multiply them together with `multiply`", [&] {
+        check(VAR(multiply) (x, y) == expectedResult);
+    });
+}
+// Parameterized multiply test end.
+
+static Suite v("writing tests",
+    // Writing tests: basic when begin.
+    given("a variable `a = 0`", [] (auto& check) {
+        int a = 0;
+
+        check.when("we add 1 to it", [&] {
+            a += 1;
+            check(VAR(a) == 1);
+        });
+
+        check.when("we add 2 to it", [&] {
+            a += 2;
+            check(VAR(a) == 2);
+        });
+
+        check.when("we add 3 to it", [&] {
+            a += 3;
+            check(VAR(a) == 3);
+        });
+    }),
+    // Writing tests: basic when end.
+
+    // Writing tests: nested when begin.
+    given("a variable `a = 0`", [] (auto& check) {
+        int a = 0;
+
+        check.when("we add 1 to it", [&] {
+            a += 1;
+            check(VAR(a) == 1);
+
+            check.when("we add 10 to it", [&] {
+                a += 10;
+                check(VAR(a) == 11);
+            });
+
+            check.when("we add 20 to it", [&] {
+                a += 20;
+                check(VAR(a) == 21);
+            });
+        });
+
+        check.when("we add 2 to it", [&] {
+            a += 2;
+            check(VAR(a) == 2);
+        });
+
+        check.when("we add 3 to it", [&] {
+            a += 3;
+            check(VAR(a) == 3);
+        });
+    }),
+    // Writing tests: nested when end.
+
+    // Parameterized multiply begin.
+    given("0 and 0",   testMultiply, 0, 0, 0),
+    given("0 and 1",   testMultiply, 0, 1, 0),
+    given("0 and 10",  testMultiply, 0, 10, 0),
+    given("1 and 0",   testMultiply, 1, 0, 0),
+    given("1 and 1",   testMultiply, 1, 1, 1),
+    given("1 and 10",  testMultiply, 1, 10, 10),
+    given("10 and 0",  testMultiply, 10, 0, 0),
+    given("10 and 1",  testMultiply, 10, 1, 10),
+    given("10 and 10", testMultiply, 10, 10, 100),
+    // Parameterized multiply end.
+
+    // Model check multiply begin.
+    exhaustive(choice(0, 1, 10), choice(0, 1, 10)).
+        given("2 numbers", [] (Check& check, int x, int y) {
+            check.when("we multiply them together", [&] {
+                int result = multiply(x, y);
+
+                // This is our model to check multiply against.
+                int expected = 0;
+
+                for (int i = 0; i < x; ++i) {
+                    expected += y;
+                }
+
+                check(VAR(result) == VAR(expected), VAR(x), VAR(y));
+            });
+        }
+    )
+    // Model check multiply end.
+);

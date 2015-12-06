@@ -288,6 +288,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
                                const string& when) override {
             ++whenDepth_;
 
+            if (verbosity_ >= Verbosity::FIXTURES) {
+                writeGiven(context, given);
+            }
+
             if (verbosity_ >= Verbosity::SECTIONS) {
                 indent(whenDepth());
                 *output_ << "When : " << when << "\n";
@@ -307,7 +311,12 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
                 *output_ << "\n";
             }
 
-            setMaxWrittenState(WrittenState::GIVEN);
+            if (whenDepth_ == 0) {
+                setMaxWrittenState(WrittenState::CONTEXT);
+            }
+            else {
+                setMaxWrittenState(WrittenState::GIVEN);
+            }
         }
 
         virtual bool notifyPassing() const override { return verbosity_ >= Verbosity::CHECKS; }

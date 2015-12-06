@@ -177,8 +177,8 @@ template argument deduction, you can just use the function as-is in assertions. 
 
 .. literalinclude:: ../examples/AllExamples.cpp
    :language: c++
-   :start-after: // Assertion example 11:
-   :end-before: // Assertion example 11 end.
+   :start-after: // Multiply example begin.
+   :end-before: // Multiply example end.
 
 *multiply* can be used directly in assertions:
 
