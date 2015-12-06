@@ -20,3 +20,4 @@ MosquitoNet: A C++ Testing Framework
     testHarnessCommandLine
     customReporters
     supportedCompilers
+    sourceCodeForExamples

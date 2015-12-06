@@ -706,14 +706,25 @@ namespace Enhedron { namespace Assertion { namespace Impl { namespace Configurab
     };
 
     template<typename Expression, typename... ContextVariableList>
+    void addContextVariables(
+            vector<Variable>& variableList,
+            const Expression& expression,
+            const ContextVariableList&... contextVariableList
+    ) {
+        expression.appendVariables(variableList);
+        addContextVariables(variableList, contextVariableList...);
+    }
+
+    inline void addContextVariables(vector<Variable>&) {}
+
+    template<typename Expression, typename... ContextVariableList>
     vector<Variable> buildVariableList(
             const Expression& expression,
             const ContextVariableList&... contextVariableList
     ) {
         vector<Variable> variableList;
         expression.appendVariables(variableList);
-        vector<Variable> contextVariableVector(contextVariableList...);
-        variableList.insert(variableList.end(), contextVariableVector.begin(), contextVariableVector.end());
+        addContextVariables(variableList, contextVariableList...);
 
         return variableList;
     }

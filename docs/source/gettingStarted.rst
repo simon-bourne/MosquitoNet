@@ -3,6 +3,7 @@ Getting Started
 
 Download the single header latest release of the single header, *MosquitoNet.h* from
 `here <https://raw.githubusercontent.com/simon-bourne/MosquitoNet/stable/cpp/single-include/MosquitoNet.h>`_.
+Everything you'll need is in the *Enhedron::Test* namespace.
 In the same directory as *MosquitoNet.h*, create a file *Harness.cpp* with this code in it:
 
 .. literalinclude:: ../examples/Harness.cpp
@@ -21,25 +22,15 @@ Now run *./test-harness* and you should get this output:
     Totals: 0 tests, 0 checks, 0 fixtures
 
 Let's add a simple test. We'll just check the value of a variable.
-Edit your *TestHarness.cpp* so it contains:
+In the same directory again, create a file *MinimalTest.cpp* so it contains:
 
-.. code-block:: c++
+.. literalinclude:: ../examples/MinimalTest.cpp
+   :language: c++
 
-    #include "MosquitoNet.h"
+and compile it with:
 
-    #include <vector>
+.. code-block:: none
 
-    using namespace Enhedron::Test;
-    using std::vector;
+    g++ --std=c++14 -o test-harness MinimalTest.cpp Harness.cpp
 
-    static Suite u("Util",
-        given("a very simple test", [] (auto& check) {
-            int a = 1;
-
-            check(VAR(a) == 1);
-        })
-    );
-
-    int main(int argc, const char* argv[]) {
-        return run(argc, argv);
-    }
+From now on, we'll give examples as code snippets from :doc:`sourceCodeForExamples`.

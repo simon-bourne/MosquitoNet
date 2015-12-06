@@ -119,7 +119,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Harness {
                 argc, argv, runTests,
                 Flag('l', "list", "List tests instead of running them."),
                 Option<string>(Name('v', "verbosity", "Set the verbosity"),
-                               "silent|summary|contexts|fixtures|sections|exhaustive-sections|checks_description|checks_expression|variables",
+                               "silent|summary|contexts|fixtures|sections|checks|checks_expression|variables",
                                "contexts"
                 )
         );
