@@ -9,7 +9,7 @@ Basic Assertions
 When your test is run, it is passed a *Check* object which is your interface to MosquitoNet within the test. *Check*
 overrides *operator()* to provide basic checking. We'll concentrate on that for now. The test will continue even if any
 checks fail. The *VAR* macro indicates that we're interested in the value and name of a particular variable. Each
-check will return `true` if the check passes, `false` otherwise`.
+check will return *true* if the check passes, *false* otherwise.
 
 This example will check the values of *a* and *b*.
 

@@ -91,7 +91,7 @@ You can see the individual runs of the test and the flow of control from the out
 Parameterized Tests
 -------------------
 
-Sometimes you want to write several very similar tests. Lets test a function multiply, that just multiplies its
+Sometimes you want to write several very similar tests. Let's test a function *multiply*, that just multiplies its
 arguments together:
 
 .. literalinclude:: ../examples/AllExamples.cpp

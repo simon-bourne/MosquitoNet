@@ -1,6 +1,17 @@
+#include "MosquitoNet.h"
+
+#include <vector>
+#include <stdexcept>
+#include <utility>
+#include <string>
+#include <sstream>
+
+using namespace Enhedron::Test;
 using std::vector;
 using std::runtime_error;
 using std::forward;
+using std::string;
+using std::ostringstream;
 
 // The comments in this file are used when building the documentation.
 
@@ -132,6 +143,24 @@ void testMultiply(Check& check, int x, int y, int expectedResult) {
 }
 // Parameterized multiply test end.
 
+// Pretty print define begin.
+struct MyType {
+    int x;
+    int y;
+};
+
+namespace Enhedron { namespace Assertion {
+    template<>
+    struct Convert<MyType> {
+        static string toString(const MyType& value) {
+            ostringstream output;
+            output << "{ x = " << value.x << ", y = " << value.y << " }";
+            return output.str();
+        }
+    };
+}}
+// Pretty print define end.
+
 static Suite v("writing tests",
     // Writing tests: basic when begin.
     given("a variable `a = 0`", [] (auto& check) {
@@ -213,6 +242,13 @@ static Suite v("writing tests",
                 check(VAR(result) == VAR(expected), VAR(x), VAR(y));
             });
         }
-    )
+    ),
     // Model check multiply end.
+
+    // Pretty print test begin.
+    given("an instance of MyType", [] (auto& check) {
+        MyType myType{1, 2};
+        check(VAR(myType.x) == 1, VAR(myType));
+    })
+    // Pretty print test end.
 );
