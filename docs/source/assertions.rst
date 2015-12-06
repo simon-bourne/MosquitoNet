@@ -1,6 +1,8 @@
 Assertions
 ==========
 
+For the full code used here, see :doc:`sourceCodeForExamples`.
+
 Basic Assertions
 ----------------
 
@@ -92,7 +94,7 @@ Outputs:
 Exceptions
 ----------
 
-This will check something derived from *std::exception* is thrown:
+This will check *std::exception* or something derived from it is thrown:
 
 .. literalinclude:: ../examples/AllExamples.cpp
    :language: c++
@@ -100,7 +102,7 @@ This will check something derived from *std::exception* is thrown:
    :end-before: // Assertion example 5 end.
    :dedent: 8
 
-This will check something derived from *runtime_error* is thrown:
+This will check *runtime_error* or something derived from it is thrown:
 
 .. literalinclude:: ../examples/AllExamples.cpp
    :language: c++
@@ -164,14 +166,14 @@ Other functions are:
   * *noneOf(container, predicate)* is true iff no elements match *predicate*.
   * *length(container)* gives the length of *container*.
   * *startsWith(container, prefixContainer)* is true iff *container* starts with *prefixContainer*.
-  * *endWith(container, postfixContainer)* is true iff *container* starts with *prefixContainer*.
+  * *endWith(container, postfixContainer)* is true iff *container* ends with *postfixContainer*.
   * *contains(container, subSequenceContainer)* is true iff *subSequenceContainer* is a sub-sequence of *container*.
 
 Customizing Assertions
 ----------------------
 
-You can customize assertions to use you own functions. If you have a non-overloaded function and you don't need template
-argument deduction, you can just use the function as-is in assertions. For example, given:
+You can customize assertions to use your own functions. If you have a non-overloaded function and you don't need
+template argument deduction, you can just use the function as-is in assertions. For example, given:
 
 .. literalinclude:: ../examples/AllExamples.cpp
    :language: c++

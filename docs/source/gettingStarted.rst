@@ -32,5 +32,3 @@ and compile it with:
 .. code-block:: none
 
     g++ --std=c++14 -o test-harness MinimalTest.cpp Harness.cpp
-
-From now on, we'll give examples as code snippets from :doc:`sourceCodeForExamples`.
