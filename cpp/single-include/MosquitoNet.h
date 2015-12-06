@@ -1582,7 +1582,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
             {
                 ++depth;
                 indent(depth);
-                *output_ << " When: " << *whenIter << "\n";
+                *output_ << "When : " << *whenIter << "\n";
             }
 
             whenWrittenDepth_ = when.stack().size();
@@ -1590,7 +1590,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
         void printVariables(const vector <Variable> &variableList) {
             for (const auto& variable : variableList) {
-                indent(whenDepth() + 1);
+                indent(whenDepth() + 2);
                 (*output_) << variable.name() << " = " << variable.value()
                            << ": file \"" << variable.file() << "\", line " << variable.line() << ".\n";
             }
@@ -1615,18 +1615,26 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
         virtual void finish(const Stats& stats) override {
             if (verbosity_ >= Verbosity::SUMMARY) {
+                bool failed = false;
+
                 if (stats.failedTests() > 0) {
                     *output_ << "FAILED TESTS: " << stats.failedTests() << "\n";
+                    failed = true;
                 }
 
                 if (stats.failedChecks() > 0) {
                     *output_ << "FAILED CHECKS: " << stats.failedChecks() << "\n";
+                    failed = true;
                 }
 
                 *output_ << "Totals: " <<
                 stats.tests() << " tests, " <<
                 stats.checks() << " checks, " <<
                 stats.fixtures() << " fixtures\n";
+
+                if (failed) {
+                    *output_ << "SOME TESTS FAILED!\n";
+                }
             }
         }
 
@@ -1662,7 +1670,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
             if (verbosity_ >= Verbosity::SECTIONS) {
                 indent(whenDepth());
-                *output_ << " When: " << when << "\n";
+                *output_ << "When : " << when << "\n";
                 whenWrittenDepth_ = whenDepth_;
             }
         }
@@ -1693,13 +1701,14 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
         {
             writeWhenStack(context, given, whenStack);
             indent(whenDepth());
-            (*output_) << "FAILED: Then";
+            (*output_) << "Then : ";
 
             if (description) {
-                *output_ << ": " << *description;
+                *output_ << *description << "\n";
+                indent(whenDepth() + 1);
             }
 
-            *output_ << ": " << expressionText << "\n";
+            *output_ << "FAILED! " << expressionText << "\n";
             printVariables(variableList);
         }
 
@@ -1711,14 +1720,18 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
                           const vector <Variable> &variableList) override
         {
             indent(whenDepth());
-            (*output_) << " Then";
+            (*output_) << "Then : ";
 
             if (description) {
-                (*output_) << ": " << *description;
+                (*output_) << *description << "\n";
             }
 
             if (verbosity_ >= Verbosity::CHECKS_EXPRESSION || ! description) {
-                (*output_) << ": " << expressionText;
+                if (description) {
+                    indent(whenDepth() + 1);
+                }
+
+                (*output_) << expressionText;
             }
 
             (*output_) << "\n";
@@ -1823,43 +1836,71 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             contextStack_.pop();
         }
 
-        Out<Results> beginGiven(const string& name) { results_->beginGiven(contextStack_, name); return results_; }
+        void beginGiven(const string& name) { results_->beginGiven(contextStack_, name); }
 
         void endGiven(const Stats& stats, const string& name) { results_->endGiven(stats, contextStack_, name); }
+
+        void beginWhen(const string& given, const NameStack& whenStack, const string& name) {
+            results_->beginWhen(contextStack_, given, whenStack, name);
+        }
+        void endWhen(const Stats& stats, const string& given, const NameStack& whenStack, const string& name) {
+            results_->endWhen(stats, contextStack_, given, whenStack, name);
+        }
+
+        void failByException(const string& given, const NameStack& whenStack, const exception& e) {
+            results_->failByException(contextStack_, given, whenStack, e);
+        }
+
+        virtual bool notifyPassing() const { return results_->notifyPassing(); }
+
+        virtual void fail(const string& given,
+                          const NameStack& whenStack,
+                          optional<string> description,
+                          const string &expressionText,
+                          const vector <Variable> &variableList) {
+            return results_->fail(contextStack_, given, whenStack, description, expressionText, variableList);
+        }
+
+        virtual void pass(const string& given,
+                          const NameStack& whenStack,
+                          optional<string> description,
+                          const string &expressionText,
+                          const vector <Variable> &variableList) {
+            return results_->pass(contextStack_, given, whenStack, description, expressionText, variableList);
+        }
     };
 
     class WhenResultRecorder final: public FailureHandler {
-        Out<Results> results_;
-        const NameStack& contextStack_;
+        Out<ContextResultsRecorder> results_;
         string given_;
         NameStack whenStack_;
     public:
-        WhenResultRecorder(Out<Results> results, const NameStack& contextStack, string given) :
-                results_(results), contextStack_(contextStack), given_(move(given)) {}
+        WhenResultRecorder(Out<ContextResultsRecorder> results, string given) :
+                results_(results), given_(move(given)) {}
 
         void push(string name) {
-            results_->beginWhen(contextStack_, given_, whenStack_, name);
+            results_->beginWhen(given_, whenStack_, name);
             whenStack_.push(move(name));
         }
 
         void pop(const Stats& stats) {
             string name = whenStack_.stack().back();
             whenStack_.pop();
-            results_->endWhen(stats, contextStack_, given_, whenStack_, name);
+            results_->endWhen(stats, given_, whenStack_, name);
         }
 
         void failByException(const exception& e) {
-            results_->failByException(contextStack_, given_, whenStack_, e);
+            results_->failByException(given_, whenStack_, e);
         }
 
         virtual bool notifyPassing() const override { return results_->notifyPassing(); }
 
         virtual void fail(optional<string> description, const string &expressionText, const vector <Variable> &variableList) override {
-            return results_->fail(contextStack_, given_, whenStack_, description, expressionText, variableList);
+            return results_->fail(given_, whenStack_, description, expressionText, variableList);
         }
 
         virtual void pass(optional<string> description, const string &expressionText, const vector <Variable> &variableList) override {
-            return results_->pass(contextStack_, given_, whenStack_, description, expressionText, variableList);
+            return results_->pass(given_, whenStack_, description, expressionText, variableList);
         }
 
     };
@@ -2020,8 +2061,8 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             return top.current == top.index + 1;
         }
     public:
-        WhenRunner(Out<Results> results, const NameStack& contextStack, string given) :
-                whenResultRecorder_(results, contextStack, move(given)) {}
+        WhenRunner(Out<ContextResultsRecorder> results, string given) :
+                whenResultRecorder_(results, move(given)) {}
 
         template<typename Functor, typename... Args>
         void run(Functor&& functor, Args&&... args);
@@ -2088,7 +2129,6 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
 
         template<typename... Args>
         bool operator()(Args&&... args) {
-            // TODO: Wrap with failure handler class that has when stack and context stack.
             return addCheck(CheckWithFailureHandler(
                     whenRunner_,
                     forward<Args>(args)...
@@ -2140,6 +2180,8 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             if ( ! whenStack.empty()) {
                 ++whenStack.back().index;
             }
+
+            stats_ += checkStats(check);
         } while ( ! whenStack.empty());
 
         if (stats_.tests() == 0) {
@@ -2181,17 +2223,20 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
             if ( ! included(pathList, depth)) return;
 
             results->beginGiven(name);
-            Stats stats;
+            Stats stats; // TODO
             results->endGiven(stats, name);
         }
 
         // Must only be called once as it forwards the constructor arguments to the class.
         virtual Stats run(const PathList& pathList, Out<ContextResultsRecorder> results, size_t depth) override {
+            results->beginGiven(name);
             Stats stats;
 
             if (included(pathList, depth)) {
                 stats += args.applyExtraBefore(runTest, name, results);
             }
+
+            results->endGiven(stats, name);
 
             return stats;
         }
@@ -2211,15 +2256,10 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         }
 
         Stats operator()(const string& name, Out<ContextResultsRecorder> results, Args&&... args) {
-            auto test = results->beginGiven(name);
-            WhenRunner whenRunner(out(*test), results->contextStack(), name);
+            WhenRunner whenRunner(results, name);
             whenRunner.run(runTest, forward<Args>(args)...);
 
-            auto stats = whenRunner.stats();
-
-            results->endGiven(stats, name);
-
-            return stats;
+            return whenRunner.stats();
         }
     };
 
@@ -2259,10 +2299,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         template<typename BoundFunctor>
         static Stats exhaustive(BoundFunctor&& functor,
                                 const string& name,
-                                Out<ContextResultsRecorder> results,
-                                Out<Results> test)
+                                Out<ContextResultsRecorder> results)
         {
-            WhenRunner whenRunner(out(*test), results->contextStack(), name);
+            WhenRunner whenRunner(results, name);
             whenRunner.run(forward<BoundFunctor>(functor));
 
             return whenRunner.stats();
@@ -2273,7 +2312,6 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                 BoundFunctor&& functor,
                 const string& name,
                 Out<ContextResultsRecorder> results,
-                Out<Results> test,
                 const Container& container,
                 const BoundArgs&... tail
             )
@@ -2287,7 +2325,6 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
                         },
                         name,
                         results,
-                        test,
                         tail...
                     );
             }
@@ -2298,15 +2335,9 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Suite {
         RunExhaustive(Functor runTest, StoreArgs<Args...> args) : runTest(move(runTest)), args(move(args)) {}
 
         Stats operator()(const string& name, Out<ContextResultsRecorder> results) {
-            auto test = results->beginGiven(name);
-
-            Stats stats = args.apply([&] (const Args&... extractedArgs) {
-                return exhaustive(move(runTest), name, results, out(*test), extractedArgs...);
+            return args.apply([&] (const Args&... extractedArgs) {
+                return exhaustive(move(runTest), name, results, extractedArgs...);
             });
-
-            results->endGiven(stats, name);
-
-            return stats;
         }
     };
 

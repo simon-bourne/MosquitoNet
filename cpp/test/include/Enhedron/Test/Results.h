@@ -202,7 +202,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
             {
                 ++depth;
                 indent(depth);
-                *output_ << " When: " << *whenIter << "\n";
+                *output_ << "When : " << *whenIter << "\n";
             }
 
             whenWrittenDepth_ = when.stack().size();
@@ -210,7 +210,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
         void printVariables(const vector <Variable> &variableList) {
             for (const auto& variable : variableList) {
-                indent(whenDepth() + 1);
+                indent(whenDepth() + 2);
                 (*output_) << variable.name() << " = " << variable.value()
                            << ": file \"" << variable.file() << "\", line " << variable.line() << ".\n";
             }
@@ -235,18 +235,26 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
         virtual void finish(const Stats& stats) override {
             if (verbosity_ >= Verbosity::SUMMARY) {
+                bool failed = false;
+
                 if (stats.failedTests() > 0) {
                     *output_ << "FAILED TESTS: " << stats.failedTests() << "\n";
+                    failed = true;
                 }
 
                 if (stats.failedChecks() > 0) {
                     *output_ << "FAILED CHECKS: " << stats.failedChecks() << "\n";
+                    failed = true;
                 }
 
                 *output_ << "Totals: " <<
                 stats.tests() << " tests, " <<
                 stats.checks() << " checks, " <<
                 stats.fixtures() << " fixtures\n";
+
+                if (failed) {
+                    *output_ << "SOME TESTS FAILED!\n";
+                }
             }
         }
 
@@ -282,7 +290,7 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
 
             if (verbosity_ >= Verbosity::SECTIONS) {
                 indent(whenDepth());
-                *output_ << " When: " << when << "\n";
+                *output_ << "When : " << when << "\n";
                 whenWrittenDepth_ = whenDepth_;
             }
         }
@@ -313,13 +321,14 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
         {
             writeWhenStack(context, given, whenStack);
             indent(whenDepth());
-            (*output_) << "FAILED: Then";
+            (*output_) << "Then : ";
 
             if (description) {
-                *output_ << ": " << *description;
+                *output_ << *description << "\n";
+                indent(whenDepth() + 1);
             }
 
-            *output_ << ": " << expressionText << "\n";
+            *output_ << "FAILED! " << expressionText << "\n";
             printVariables(variableList);
         }
 
@@ -331,14 +340,18 @@ namespace Enhedron { namespace Test { namespace Impl { namespace Impl_Results {
                           const vector <Variable> &variableList) override
         {
             indent(whenDepth());
-            (*output_) << " Then";
+            (*output_) << "Then : ";
 
             if (description) {
-                (*output_) << ": " << *description;
+                (*output_) << *description << "\n";
             }
 
             if (verbosity_ >= Verbosity::CHECKS_EXPRESSION || ! description) {
-                (*output_) << ": " << expressionText;
+                if (description) {
+                    indent(whenDepth() + 1);
+                }
+
+                (*output_) << expressionText;
             }
 
             (*output_) << "\n";
