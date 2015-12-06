@@ -15,7 +15,6 @@ MosquitoNet: A C++ Testing Framework
     bddTests
     parameterizedTests
     modelChecking
-    customizingAssertions
     prettyPrintingYourTypes
     testHarnessCommandLine
     customReporters

@@ -7,7 +7,7 @@ Basic Assertions
 When your test is run, it is passed a *Check* object which is your interface to MosquitoNet within the test. *Check*
 overrides *operator()* to provide basic checking. We'll concentrate on that for now. The test will continue even if any
 checks fail. The *VAR* macro indicates that we're interested in the value and name of a particular variable. Each
-check will return a `bool` with `true` iff the check passes.
+check will return `true` if the check passes, `false` otherwise`.
 
 This example will check the values of *a* and *b*.
 
@@ -134,3 +134,93 @@ And with context variables:
    :start-after: // Assertion example 9:
    :end-before: // Assertion example 9 end.
    :dedent: 8
+
+Containers
+----------
+
+MosquitoNet provides some utility functions for working with containers. For example, you can check the length of a
+container:
+
+.. literalinclude:: ../examples/AllExamples.cpp
+   :language: c++
+   :start-after: // Assertion example 10:
+   :end-before: // Assertion example 10 end.
+   :dedent: 8
+
+and it will output:
+
+.. code-block:: none
+
+    Then : the length of a vector is 3
+        (length(v) == 3)
+            v = [1, 2, 3]: file "/work/build/MosquitoNet/cpp/test/src/Examples/AllExamples.cpp", line 96.
+
+Other functions are:
+
+  * *countEqual(container, value)* gives the number of elements equal to *value*.
+  * *countMatching(container, predicate)* gives the number of elements matching *predicate*.
+  * *allOf(container, predicate)* is true iff all elements match *predicate*.
+  * *anyOf(container, predicate)* is true iff any elements match *predicate*.
+  * *noneOf(container, predicate)* is true iff no elements match *predicate*.
+  * *length(container)* gives the length of *container*.
+  * *startsWith(container, prefixContainer)* is true iff *container* starts with *prefixContainer*.
+  * *endWith(container, postfixContainer)* is true iff *container* starts with *prefixContainer*.
+  * *contains(container, subSequenceContainer)* is true iff *subSequenceContainer* is a sub-sequence of *container*.
+
+Customizing Assertions
+----------------------
+
+You can customize assertions to use you own functions. If you have a non-overloaded function and you don't need template
+argument deduction, you can just use the function as-is in assertions. For example, given:
+
+.. literalinclude:: ../examples/AllExamples.cpp
+   :language: c++
+   :start-after: // Assertion example 11:
+   :end-before: // Assertion example 11 end.
+
+*multiply* can be used directly in assertions:
+
+.. literalinclude:: ../examples/AllExamples.cpp
+   :language: c++
+   :start-after: // Assertion example 12:
+   :end-before: // Assertion example 12 end.
+   :dedent: 8
+
+Arguments can be recorded as variables if required:
+
+.. literalinclude:: ../examples/AllExamples.cpp
+   :language: c++
+   :start-after: // Assertion example 13:
+   :end-before: // Assertion example 13 end.
+   :dedent: 8
+
+If you have an overloaded function or require template argument deduction, or just want a cleaner syntax, you can
+provide a wrapper for your function. For example, given:
+
+.. literalinclude:: ../examples/AllExamples.cpp
+   :language: c++
+   :start-after: // Assertion example 14:
+   :end-before: // Assertion example 14 end.
+
+You can provide the wrapper:
+
+.. literalinclude:: ../examples/AllExamples.cpp
+   :language: c++
+   :start-after: // Assertion example 15:
+   :end-before: // Assertion example 15 end.
+
+then the check:
+
+.. literalinclude:: ../examples/AllExamples.cpp
+   :language: c++
+   :start-after: // Assertion example 16:
+   :end-before: // Assertion example 16 end.
+   :dedent: 8
+
+will output:
+
+.. code-block:: none
+
+    Then : 3 cubed is 27
+        (multiplyOverloaded(three, 3, 3) == 27)
+            three = 3: file "/work/build/MosquitoNet/cpp/test/src/Examples/AllExamples.cpp", line 104.
